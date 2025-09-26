@@ -2,7 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Typography, Box } from '@mui/material';
+import { 
+  Typography, Box, Accordion, AccordionSummary, AccordionDetails 
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PlanosForm from '../components/PlanosForm';
 import PlanosList from '../components/PlanosList';
 
@@ -30,12 +33,30 @@ function PlanosPage() {
       <Typography variant="h4" component="h1" gutterBottom>
         Gerenciar Planos
       </Typography>
-      <PlanosForm onPlanoAdicionado={fetchPlanos} />
-      <PlanosList
-        planos={planos}
-        onPlanoExcluido={fetchPlanos}
-        onPlanoAtualizado={fetchPlanos}
-      />
+
+      {/* 1. Acordeão do Formulário, começando expandido */}
+      <Accordion defaultExpanded sx={{ mb: 4 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">Cadastrar Novo Plano</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <PlanosForm onPlanoAdicionado={fetchPlanos} />
+        </AccordionDetails>
+      </Accordion>
+
+      {/* 2. Acordeão da Lista, começando expandido */}
+      <Accordion defaultExpanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">Lista de Planos</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <PlanosList
+            planos={planos}
+            onPlanoExcluido={fetchPlanos}
+            onPlanoAtualizado={fetchPlanos}
+          />
+        </AccordionDetails>
+      </Accordion>
     </Box>
   );
 }

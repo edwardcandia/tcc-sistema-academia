@@ -2,7 +2,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Typography, Box, TextField, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { 
+  Typography, Box, TextField, FormControl, InputLabel, Select, MenuItem,
+  Accordion, AccordionSummary, AccordionDetails
+} from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AlunosForm from '../components/AlunosForm';
 import AlunosList from '../components/AlunosList';
 
@@ -13,7 +17,6 @@ function AlunosPage() {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const { authHeader } = useAuth();
 
-  // Função para buscar os planos (necessário para o formulário de alunos)
   const fetchPlanos = async () => {
     try {
       const response = await axios.get('http://localhost:3001/api/planos', authHeader());
@@ -23,7 +26,6 @@ function AlunosPage() {
     }
   };
 
-  // Função para buscar os alunos
   const fetchAlunos = async () => {
     try {
       const response = await axios.get('http://localhost:3001/api/alunos', authHeader());
@@ -55,35 +57,53 @@ function AlunosPage() {
       <Typography variant="h4" component="h1" gutterBottom>
         Gerenciar Alunos
       </Typography>
-      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
-        <TextField
-          label="Buscar por Nome ou Email"
-          variant="outlined"
-          size="small"
-          fullWidth
-          value={termoBusca}
-          onChange={(e) => setTermoBusca(e.target.value)}
-        />
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Status</InputLabel>
-          <Select
-            value={filtroStatus}
-            label="Status"
-            onChange={(e) => setFiltroStatus(e.target.value)}
-          >
-            <MenuItem value="todos">Todos</MenuItem>
-            <MenuItem value="ativo">Ativo</MenuItem>
-            <MenuItem value="inativo">Inativo</MenuItem>
-          </Select>
-        </FormControl>
-      </Box>
-      <AlunosForm planos={planos} onAlunoAdicionado={fetchAlunos} />
-      <AlunosList
-        alunos={alunosFiltrados}
-        planos={planos}
-        onAlunoExcluido={fetchAlunos}
-        onAlunoAtualizado={fetchAlunos}
-      />
+
+      {/* 1. Acordeão do Formulário, começando expandido */}
+      <Accordion defaultExpanded sx={{ mb: 4 }}>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">Cadastrar Novo Aluno</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <AlunosForm planos={planos} onAlunoAdicionado={fetchAlunos} />
+        </AccordionDetails>
+      </Accordion>
+
+      {/* 2. Acordeão da Lista e Filtros, começando expandido */}
+      <Accordion defaultExpanded>
+        <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+          <Typography variant="h6">Lista de Alunos</Typography>
+        </AccordionSummary>
+        <AccordionDetails>
+          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+            <TextField
+              label="Buscar por Nome ou Email"
+              variant="outlined"
+              size="small"
+              fullWidth
+              value={termoBusca}
+              onChange={(e) => setTermoBusca(e.target.value)}
+            />
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Status</InputLabel>
+              <Select
+                value={filtroStatus}
+                label="Status"
+                onChange={(e) => setFiltroStatus(e.target.value)}
+              >
+                <MenuItem value="todos">Todos</MenuItem>
+                <MenuItem value="ativo">Ativo</MenuItem>
+                <MenuItem value="inativo">Inativo</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          <AlunosList
+            alunos={alunosFiltrados}
+            planos={planos}
+            onAlunoExcluido={fetchAlunos}
+            onAlunoAtualizado={fetchAlunos}
+          />
+        </AccordionDetails>
+      </Accordion>
     </Box>
   );
 }

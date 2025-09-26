@@ -1,5 +1,5 @@
 // frontend/src/components/AlunosList.jsx
-import React, { useState } from 'react';
+import React, { useState, forwardRef } from 'react';
 import axios from 'axios';
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
@@ -8,11 +8,22 @@ import {
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
-import CancelIcon from '@mui/icons-material/Cancel';
 import PaymentIcon from '@mui/icons-material/Payment';
+import HistoryIcon from '@mui/icons-material/History';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import { format } from 'date-fns';
+import { IMaskInput } from 'react-imask';
+
+// --- Adaptadores para as máscaras ---
+const CpfMask = forwardRef(function CpfMask(props, ref) {
+  const { onChange, ...other } = props;
+  return ( <IMaskInput {...other} mask="000.000.000-00" inputRef={ref} onAccept={(value) => onChange({ target: { name: props.name, value } })} overwrite /> );
+});
+const TelefoneMask = forwardRef(function TelefoneMask(props, ref) {
+  const { onChange, ...other } = props;
+  return ( <IMaskInput {...other} mask="(00) 00000-0000" inputRef={ref} onAccept={(value) => onChange({ target: { name: props.name, value } })} overwrite /> );
+});
 
 const styleModal = {
   position: 'absolute',
@@ -24,53 +35,95 @@ const styleModal = {
   border: '2px solid #000',
   boxShadow: 24,
   p: 4,
+  display: 'flex',
+  flexDirection: 'column',
+  gap: 2
 };
 
 function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
   const { authHeader } = useAuth();
-  const [editingAlunoId, setEditingAlunoId] = useState(null);
-  const [editFormData, setEditFormData] = useState({});
-  const [openModal, setOpenModal] = useState(false);
-  const [alunoSelecionado, setAlunoSelecionado] = useState(null);
+  const [pagamentoModalOpen, setPagamentoModalOpen] = useState(false);
+  const [alunoParaPagamento, setAlunoParaPagamento] = useState(null);
   const [valorPago, setValorPago] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [alunoParaEditar, setAlunoParaEditar] = useState(null);
+  const [historicoModalOpen, setHistoricoModalOpen] = useState(false);
+  const [historicoPagamentos, setHistoricoPagamentos] = useState([]);
+  const [alunoParaHistorico, setAlunoParaHistorico] = useState(null);
 
-  const handleOpenModal = (aluno) => {
-    setAlunoSelecionado(aluno);
+  const handleOpenHistoricoModal = async (aluno) => {
+    setAlunoParaHistorico(aluno);
+    try {
+      const response = await axios.get(`http://localhost:3001/api/alunos/${aluno.id}/pagamentos`, authHeader());
+      setHistoricoPagamentos(response.data);
+      setHistoricoModalOpen(true);
+    } catch (error) {
+      toast.error("Falha ao carregar o histórico.");
+    }
+  };
+  const handleCloseHistoricoModal = () => setHistoricoModalOpen(false);
+
+  const handleDeletePagamento = async (pagamentoId) => {
+    if (window.confirm('Tem certeza que deseja excluir este pagamento?')) {
+        try {
+            await axios.delete(`http://localhost:3001/api/pagamentos/${pagamentoId}`, authHeader());
+            toast.success('Pagamento excluído com sucesso!');
+            handleOpenHistoricoModal(alunoParaHistorico);
+            onAlunoAtualizado();
+        } catch (error) {
+            toast.error('Falha ao excluir o pagamento.');
+        }
+    }
+  };
+
+  const handleOpenPagamentoModal = (aluno) => {
+    setAlunoParaPagamento(aluno);
     const planoDoAluno = planos.find(p => p.id === aluno.plano_id);
     setValorPago(planoDoAluno ? planoDoAluno.valor : '');
-    setOpenModal(true);
+    setPagamentoModalOpen(true);
   };
-  const handleCloseModal = () => setOpenModal(false);
+  const handleClosePagamentoModal = () => setPagamentoModalOpen(false);
 
   const handleSubmitPagamento = async (e) => {
     e.preventDefault();
     try {
-      const dataPagamento = {
-        valor_pago: parseFloat(valorPago),
-        data_pagamento: new Date().toISOString().split('T')[0],
-      };
-      await axios.post(`http://localhost:3001/api/alunos/${alunoSelecionado.id}/pagamentos`, dataPagamento, authHeader());
+      const dataPagamento = { valor_pago: parseFloat(valorPago), data_pagamento: new Date().toISOString().split('T')[0] };
+      await axios.post(`http://localhost:3001/api/alunos/${alunoParaPagamento.id}/pagamentos`, dataPagamento, authHeader());
       toast.success('Pagamento registrado com sucesso!');
-      onAlunoAtualizado(); // Recarrega a lista de alunos
-      handleCloseModal();
+      onAlunoAtualizado();
+      handleClosePagamentoModal();
     } catch (error) {
       toast.error('Falha ao registrar pagamento.');
     }
   };
   
-  const handleEditClick = (aluno) => {
-    setEditingAlunoId(aluno.id);
-    setEditFormData(aluno);
+  const handleOpenEditModal = (aluno) => {
+    const dataFormatada = aluno.data_nascimento ? format(new Date(aluno.data_nascimento), 'yyyy-MM-dd') : '';
+    setAlunoParaEditar({ ...aluno, data_nascimento: dataFormatada });
+    setEditModalOpen(true);
   };
-  const handleCancelClick = () => {
-    setEditingAlunoId(null);
-  };
-  const handleChange = (e) => {
+  const handleCloseEditModal = () => setEditModalOpen(false);
+
+  const handleEditFormChange = (e) => {
     const { name, value } = e.target;
-    setEditFormData({ ...editFormData, [name]: value });
+    setAlunoParaEditar({ ...alunoParaEditar, [name]: value });
   };
+  
+  const handleUpdateSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const dadosParaEnviar = { ...alunoParaEditar, plano_id: parseInt(alunoParaEditar.plano_id, 10) || null };
+      await axios.put(`http://localhost:3001/api/alunos/${alunoParaEditar.id}`, dadosParaEnviar, authHeader());
+      toast.success('Aluno atualizado com sucesso!');
+      onAlunoAtualizado();
+      handleCloseEditModal();
+    } catch (error) {
+      toast.error('Falha ao atualizar aluno.');
+    }
+  };
+
   const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja excluir este aluno?')) {
+    if (window.confirm('Tem certeza?')) {
       try {
         await axios.delete(`http://localhost:3001/api/alunos/${id}`, authHeader());
         toast.success('Aluno excluído com sucesso!');
@@ -78,21 +131,6 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
       } catch (error) {
         toast.error('Falha ao excluir aluno.');
       }
-    }
-  };
-  const handleUpdateSubmit = async (e) => {
-    e.preventDefault();
-    const dadosParaEnviar = {
-      ...editFormData,
-      plano_id: parseInt(editFormData.plano_id, 10) || null,
-    };
-    try {
-      await axios.put(`http://localhost:3001/api/alunos/${editingAlunoId}`, dadosParaEnviar, authHeader());
-      toast.success('Aluno atualizado com sucesso!');
-      setEditingAlunoId(null);
-      onAlunoAtualizado();
-    } catch (error)      {
-      toast.error('Falha ao atualizar aluno.');
     }
   };
 
@@ -105,65 +143,95 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
   
   return (
     <>
-      <Box component="form" onSubmit={handleUpdateSubmit}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Lista de Alunos</Typography>
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Nome Completo</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>Status Pagamento</TableCell>
-                <TableCell align="right">Ações</TableCell>
+      <Typography variant="h6" sx={{ mb: 2 }}>Lista de Alunos</Typography>
+      <TableContainer component={Paper}>
+        <Table>
+          <TableHead>
+            <TableRow>
+              <TableCell>Nome Completo</TableCell>
+              <TableCell>Email</TableCell>
+              <TableCell>Status Pagamento</TableCell>
+              <TableCell align="right">Ações</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {alunos.map(aluno => (
+              <TableRow key={aluno.id} sx={{ backgroundColor: aluno.status_pagamento === 'atrasado' ? '#ffebee' : 'inherit' }}>
+                <TableCell>{aluno.nome_completo}</TableCell>
+                <TableCell>{aluno.email}</TableCell>
+                <TableCell><Chip label={aluno.status_pagamento.replace('_', ' ')} color={getStatusColor(aluno.status_pagamento)} size="small" /></TableCell>
+                <TableCell align="right">
+                  <IconButton onClick={() => handleOpenPagamentoModal(aluno)} color="success" title="Registrar Pagamento"><PaymentIcon /></IconButton>
+                  <IconButton onClick={() => handleOpenHistoricoModal(aluno)} color="default" title="Histórico de Pagamentos"><HistoryIcon /></IconButton>
+                  <IconButton onClick={() => handleOpenEditModal(aluno)} color="primary" title="Editar Aluno"><EditIcon /></IconButton>
+                  <IconButton onClick={() => handleDelete(aluno.id)} color="error" title="Excluir Aluno"><DeleteIcon /></IconButton>
+                </TableCell>
               </TableRow>
-            </TableHead>
-            <TableBody>
-              {alunos.map(aluno => (
-                <TableRow key={aluno.id} sx={{ backgroundColor: aluno.status_pagamento === 'atrasado' ? '#ffebee' : 'inherit' }}>
-                  {editingAlunoId === aluno.id ? (
-                    <>
-                      <TableCell><TextField size="small" name="nome_completo" value={editFormData.nome_completo} onChange={handleChange} fullWidth /></TableCell>
-                      <TableCell><TextField size="small" type="email" name="email" value={editFormData.email} onChange={handleChange} fullWidth /></TableCell>
-                      <TableCell colSpan={1}></TableCell>
-                      <TableCell align="right">
-                        <IconButton type="submit" color="primary"><SaveIcon /></IconButton>
-                        <IconButton type="button" onClick={handleCancelClick}><CancelIcon /></IconButton>
-                      </TableCell>
-                    </>
-                  ) : (
-                    <>
-                      <TableCell>{aluno.nome_completo}</TableCell>
-                      <TableCell>{aluno.email}</TableCell>
-                      <TableCell>
-                        <Chip label={aluno.status_pagamento.replace('_', ' ')} color={getStatusColor(aluno.status_pagamento)} size="small" />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton onClick={() => handleOpenModal(aluno)} color="success" title="Registrar Pagamento"><PaymentIcon /></IconButton>
-                        <IconButton type="button" onClick={() => handleEditClick(aluno)} color="primary" title="Editar Aluno"><EditIcon /></IconButton>
-                        <IconButton type="button" onClick={() => handleDelete(aluno.id)} color="error" title="Excluir Aluno"><DeleteIcon /></IconButton>
-                      </TableCell>
-                    </>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
-      <Modal open={openModal} onClose={handleCloseModal}>
-        <Box sx={styleModal} component="form" onSubmit={handleSubmitPagamento}>
-          <Typography variant="h6" component="h2">Registrar Pagamento para {alunoSelecionado?.nome_completo}</Typography>
-          <TextField
-            label="Valor a Pagar (R$)" type="number" value={valorPago} onChange={(e) => setValorPago(e.target.value)}
-            fullWidth required sx={{ mt: 2 }}
-          />
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-            <Button onClick={handleCloseModal} variant="text">Cancelar</Button>
-            <Button type="submit" variant="contained">Confirmar Pagamento</Button>
+      {alunoParaEditar && (
+        <Modal open={editModalOpen} onClose={handleCloseEditModal}>
+          <Box sx={styleModal} component="form" onSubmit={handleUpdateSubmit}>
+            <Typography variant="h6">Editar Aluno</Typography>
+            <TextField label="Nome Completo" name="nome_completo" value={alunoParaEditar.nome_completo} onChange={handleEditFormChange} fullWidth required />
+            <TextField label="CPF" name="cpf" value={alunoParaEditar.cpf} onChange={handleEditFormChange} fullWidth required InputProps={{ inputComponent: CpfMask }} />
+            <TextField label="Email" type="email" name="email" value={alunoParaEditar.email} onChange={handleEditFormChange} fullWidth required />
+            <TextField label="Telefone" name="telefone" value={alunoParaEditar.telefone} onChange={handleEditFormChange} fullWidth InputProps={{ inputComponent: TelefoneMask }} />
+            <TextField label="Data de Nascimento" type="date" name="data_nascimento" value={alunoParaEditar.data_nascimento} onChange={handleEditFormChange} fullWidth required InputLabelProps={{ shrink: true }} />
+            <FormControl fullWidth required>
+              <InputLabel>Plano</InputLabel>
+              <Select name="plano_id" value={alunoParaEditar.plano_id || ''} label="Plano" onChange={handleEditFormChange}>
+                {planos.map(plano => <MenuItem key={plano.id} value={plano.id}>{plano.nome}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select name="status" value={alunoParaEditar.status} label="Status" onChange={handleEditFormChange}>
+                <MenuItem value="ativo">Ativo</MenuItem>
+                <MenuItem value="inativo">Inativo</MenuItem>
+              </Select>
+            </FormControl>
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+              <Button onClick={handleCloseEditModal}>Cancelar</Button>
+              <Button type="submit" variant="contained">Salvar Alterações</Button>
+            </Box>
           </Box>
-        </Box>
-      </Modal>
+        </Modal>
+      )}
+
+      {alunoParaPagamento && (
+         <Modal open={pagamentoModalOpen} onClose={handleClosePagamentoModal}>
+            <Box sx={styleModal} component="form" onSubmit={handleSubmitPagamento}>
+              <Typography variant="h6">Registrar Pagamento para {alunoParaPagamento?.nome_completo}</Typography>
+              <TextField label="Valor a Pagar (R$)" type="number" value={valorPago} onChange={(e) => setValorPago(e.target.value)} fullWidth required sx={{ mt: 2 }} />
+              <Box sx={{ mt: 3, display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+                <Button onClick={handleClosePagamentoModal} variant="text">Cancelar</Button>
+                <Button type="submit" variant="contained">Confirmar Pagamento</Button>
+              </Box>
+            </Box>
+          </Modal>
+      )}
+
+      {alunoParaHistorico && (
+        <Modal open={historicoModalOpen} onClose={handleCloseHistoricoModal}>
+          <Box sx={styleModal}>
+            <Typography variant="h6">Histórico de Pagamentos de {alunoParaHistorico.nome_completo}</Typography>
+            <TableContainer component={Paper} sx={{ mt: 2, maxHeight: 300 }}><Table size="small" stickyHeader><TableHead><TableRow><TableCell>Data</TableCell><TableCell align="right">Valor</TableCell><TableCell align="right">Ação</TableCell></TableRow></TableHead>
+                <TableBody>
+                  {historicoPagamentos.length > 0 ? historicoPagamentos.map(pg => (
+                    <TableRow key={pg.id}><TableCell>{pg.data_pagamento}</TableCell><TableCell align="right">R$ {parseFloat(pg.valor).toFixed(2)}</TableCell>
+                    <TableCell align="right"><IconButton size="small" onClick={() => handleDeletePagamento(pg.id)} color="error" title="Excluir Pagamento"><DeleteIcon fontSize="small"/></IconButton></TableCell>
+                    </TableRow>
+                  )) : ( <TableRow><TableCell colSpan={3} align="center">Nenhum pagamento encontrado.</TableCell></TableRow> )}
+                </TableBody>
+            </Table></TableContainer>
+            <Button onClick={handleCloseHistoricoModal} sx={{ mt: 2, alignSelf: 'flex-end' }}>Fechar</Button>
+          </Box>
+        </Modal>
+      )}
     </>
   );
 }

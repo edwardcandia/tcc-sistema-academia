@@ -9,6 +9,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Importar e usar as rotas
 const planosRoutes = require('./src/routes/planosRoutes');
 const alunosRoutes = require('./src/routes/alunosRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
