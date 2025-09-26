@@ -2,15 +2,15 @@
 const express = require('express');
 const router = express.Router();
 const planosController = require('../controllers/planosController');
-const verifyToken = require('../middleware/verifyToken'); // 1. Importa o middleware
+const verifyToken = require('../middleware/verifyToken');
+const authorizeRole = require('../middleware/authorizeRole');
 
-// A rota GET para listar planos pode continuar pública ou ser protegida.
-// Vamos mantê-la pública por enquanto para que a lógica do frontend não quebre imediatamente.
+// Listar planos continua público para o formulário de alunos funcionar
 router.get('/planos', planosController.getPlanos);
 
-// 2. Adiciona o verifyToken como um passo intermediário para proteger as rotas de escrita
-router.post('/planos', verifyToken, planosController.createPlano);
-router.put('/planos/:id', verifyToken, planosController.updatePlano);
-router.delete('/planos/:id', verifyToken, planosController.deletePlano);
+// Apenas administradores podem criar, atualizar ou deletar planos
+router.post('/planos', verifyToken, authorizeRole(['administrador']), planosController.createPlano);
+router.put('/planos/:id', verifyToken, authorizeRole(['administrador']), planosController.updatePlano);
+router.delete('/planos/:id', verifyToken, authorizeRole(['administrador']), planosController.deletePlano);
 
 module.exports = router;

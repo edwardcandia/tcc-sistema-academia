@@ -9,29 +9,33 @@ import PlanosPage from './pages/PlanosPage';
 import RelatoriosPage from './pages/RelatoriosPage';
 import { useAuth } from './context/AuthContext';
 
-function PrivateRoute({ children }) {
-  const { token } = useAuth();
-  return token ? children : <Navigate to="/login" />;
+function PrivateRoute({ children, roles }) {
+  const { token, user } = useAuth();
+  
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  
+  if (roles && !roles.includes(user?.cargo)) {
+    return <Navigate to="/dashboard" />;
+  }
+
+  return children;
 }
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-
-      {/* Rotas Protegidas que usarão o Layout */}
-      <Route 
-        path="/" 
-        element={<PrivateRoute><Layout /></PrivateRoute>}
-      >
+      
+      <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="alunos" element={<AlunosPage />} />
-        <Route path="planos" element={<PlanosPage />} />
-        <Route path="relatorios" element={<RelatoriosPage />} />
+        <Route path="planos" element={<PrivateRoute roles={['administrador']}><PlanosPage /></PrivateRoute>} />
+        <Route path="relatorios" element={<PrivateRoute roles={['administrador']}><RelatoriosPage /></PrivateRoute>} />
       </Route>
 
-      {/* Rota para qualquer outro caminho */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
