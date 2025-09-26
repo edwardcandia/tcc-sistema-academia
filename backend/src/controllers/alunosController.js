@@ -1,0 +1,82 @@
+// backend/src/controllers/alunosController.js
+const pool = require('../config/database');
+
+const getAlunos = async (req, res) => {
+  try {
+    const query = `
+      SELECT *,
+        CASE
+          WHEN status = 'inativo' THEN 'inativo'
+          WHEN proximo_vencimento IS NULL THEN 'pendente'
+          WHEN proximo_vencimento < NOW() THEN 'atrasado'
+          ELSE 'em_dia'
+        END as status_pagamento
+      FROM alunos
+      ORDER BY id ASC
+    `;
+    const result = await pool.query(query);
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Erro detalhado ao buscar alunos:', error);
+    res.status(500).json({ error: 'Erro ao buscar os alunos.' });
+  }
+};
+
+const createAluno = async (req, res) => {
+  // 1. Adicionamos 'status' à desestruturação.
+  const { nome_completo, cpf, email, telefone, data_nascimento, plano_id, status } = req.body;
+  
+  if (!nome_completo || !cpf || !email || !data_nascimento) {
+    return res.status(400).json({ error: 'Campos obrigatórios não preenchidos.' });
+  }
+
+  try {
+    const proximoVencimento = new Date();
+    proximoVencimento.setDate(proximoVencimento.getDate() + 30);
+    
+    // 2. Usamos o status vindo do formulário, ou 'ativo' como padrão.
+    const statusFinal = status || 'ativo';
+
+    const result = await pool.query(
+      'INSERT INTO alunos (nome_completo, cpf, email, telefone, data_nascimento, plano_id, proximo_vencimento, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [nome_completo, cpf, email, telefone, data_nascimento, plano_id, proximoVencimento, statusFinal]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro detalhado ao criar aluno:', error);
+    if (error.code === '23505') { return res.status(409).json({ error: 'CPF ou Email já cadastrado.' }); }
+    res.status(500).json({ error: 'Erro ao criar o aluno.' });
+  }
+};
+
+const updateAluno = async (req, res) => {
+  const { id } = req.params;
+  const { nome_completo, cpf, email, telefone, data_nascimento, plano_id, status, proximo_vencimento } = req.body;
+  if (!nome_completo || !cpf || !email || !data_nascimento) { return res.status(400).json({ error: 'Campos obrigatórios não preenchidos.' }); }
+  try {
+    const result = await pool.query(
+      'UPDATE alunos SET nome_completo = $1, cpf = $2, email = $3, telefone = $4, data_nascimento = $5, plano_id = $6, status = $7, proximo_vencimento = $8 WHERE id = $9 RETURNING *',
+      [nome_completo, cpf, email, telefone, data_nascimento, plano_id, status, proximo_vencimento, id]
+    );
+    if (result.rows.length === 0) { return res.status(404).json({ error: 'Aluno não encontrado.' }); }
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro detalhado ao atualizar aluno:', error);
+    if (error.code === '23505') { return res.status(409).json({ error: 'CPF ou Email já cadastrado para outro aluno.' });}
+    res.status(500).json({ error: 'Erro ao atualizar o aluno.' });
+  }
+};
+
+const deleteAluno = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM alunos WHERE id = $1', [id]);
+    if (result.rowCount === 0) { return res.status(404).json({ error: 'Aluno não encontrado.' });}
+    res.status(200).json({ message: 'Aluno deletado com sucesso.' });
+  } catch (error) {
+    console.error('Erro detalhado ao deletar aluno:', error);
+    res.status(500).json({ error: 'Erro ao deletar o aluno.' });
+  }
+};
+
+module.exports = { getAlunos, createAluno, updateAluno, deleteAluno };
