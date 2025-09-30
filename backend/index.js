@@ -16,6 +16,7 @@ const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const pagamentosRoutes = require('./src/routes/pagamentosRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const relatoriosRoutes = require('./src/routes/relatoriosRoutes');
+const portalRoutes = require('./src/routes/portalRoutes');
 
 app.use('/api', authRoutes);
 app.use('/api', planosRoutes);
@@ -23,6 +24,7 @@ app.use('/api', alunosRoutes);
 app.use('/api', dashboardRoutes);
 app.use('/api', pagamentosRoutes);
 app.use('/api', relatoriosRoutes);
+app.use('/api', portalRoutes);
 
 app.listen(PORT, () => {
   console.log(`Servidor rodando na porta ${PORT}`);

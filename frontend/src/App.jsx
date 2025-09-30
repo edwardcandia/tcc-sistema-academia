@@ -7,27 +7,29 @@ import DashboardPage from './pages/DashboardPage';
 import AlunosPage from './pages/AlunosPage';
 import PlanosPage from './pages/PlanosPage';
 import RelatoriosPage from './pages/RelatoriosPage';
+import AlunoLoginPage from './pages/AlunoLoginPage'; // Importado
+import AlunoDashboardPage from './pages/AlunoDashboardPage'; // Importado
 import { useAuth } from './context/AuthContext';
 
+// Protege rotas de Admin/Atendente
 function PrivateRoute({ children, roles }) {
   const { token, user } = useAuth();
-  
-  if (!token) {
-    return <Navigate to="/login" />;
-  }
-  
-  if (roles && !roles.includes(user?.cargo)) {
-    return <Navigate to="/dashboard" />;
-  }
-
+  if (!token || !user) return <Navigate to="/login" />;
+  if (roles && !roles.includes(user.cargo)) return <Navigate to="/dashboard" />;
   return children;
+}
+
+// Protege rotas de Aluno
+function AlunoPrivateRoute({ children }) {
+    const { token, aluno } = useAuth();
+    return (token && aluno) ? children : <Navigate to="/aluno/login" />;
 }
 
 function App() {
   return (
     <Routes>
+      {/* Rotas de Admin/Atendente */}
       <Route path="/login" element={<Login />} />
-      
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<DashboardPage />} />
@@ -36,6 +38,11 @@ function App() {
         <Route path="relatorios" element={<PrivateRoute roles={['administrador']}><RelatoriosPage /></PrivateRoute>} />
       </Route>
 
+      {/* Rotas do Portal do Aluno */}
+      <Route path="/aluno/login" element={<AlunoLoginPage />} />
+      <Route path="/aluno/dashboard" element={<AlunoPrivateRoute><AlunoDashboardPage /></AlunoPrivateRoute>} />
+
+      {/* Rota padrão */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
