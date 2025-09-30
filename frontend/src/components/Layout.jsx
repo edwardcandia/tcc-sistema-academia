@@ -7,6 +7,7 @@ import PeopleIcon from '@mui/icons-material/People';
 import ListAltIcon from '@mui/icons-material/ListAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LogoutIcon from '@mui/icons-material/Logout';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { useAuth } from '../context/AuthContext';
 
 const drawerWidth = 240;
@@ -24,6 +25,7 @@ function Layout() {
     { text: 'Dashboard', path: '/dashboard', icon: <DashboardIcon />, roles: ['administrador', 'atendente'] },
     { text: 'Alunos', path: '/alunos', icon: <PeopleIcon />, roles: ['administrador', 'atendente'] },
     { text: 'Planos', path: '/planos', icon: <ListAltIcon />, roles: ['administrador'] },
+    { text: 'Exercícios', path: '/exercicios', icon: <FitnessCenterIcon />, roles: ['administrador'] },
     { text: 'Relatórios', path: '/relatorios', icon: <AssessmentIcon />, roles: ['administrador'] },
   ];
 
