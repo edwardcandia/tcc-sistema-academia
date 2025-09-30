@@ -14,10 +14,17 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await login(email, senha);
-      navigate('/dashboard'); // Redireciona para o dashboard após o login
+      // Chama a função de login sem o tipo
+      const tipoUsuarioLogado = await login(email, senha);
+      
+      // Redireciona com base na resposta que a função login nos deu
+      if (tipoUsuarioLogado === 'aluno') {
+        navigate('/aluno/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (error) {
-      toast.error('Falha no login. Verifique suas credenciais.');
+      toast.error(error.response?.data?.error || 'Falha no login. Verifique as suas credenciais.');
     }
   };
 
@@ -25,39 +32,15 @@ function Login() {
     <Container component="main" maxWidth="xs">
       <Paper elevation={6} sx={{ marginTop: 8, padding: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Typography component="h1" variant="h5">
-          Login
+          Login S.G.A
+        </Typography>
+        <Typography component="p" variant="body2" sx={{ mt: 1 }}>
+          Acesso para Gestores e Alunos
         </Typography>
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Endereço de Email"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="senha"
-            label="Senha"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            value={senha}
-            onChange={(e) => setSenha(e.target.value)}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
+          <TextField margin="normal" required fullWidth id="email" label="Endereço de Email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <TextField margin="normal" required fullWidth name="senha" label="Senha" type="password" id="password" value={senha} onChange={(e) => setSenha(e.target.value)} />
+          <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
             Entrar
           </Button>
         </Box>

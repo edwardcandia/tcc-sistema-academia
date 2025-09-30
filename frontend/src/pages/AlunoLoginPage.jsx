@@ -8,17 +8,17 @@ import { toast } from 'react-toastify';
 function AlunoLoginPage() {
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
-  const { login } = useAuth(); // Usaremos a mesma função de login, o contexto vai lidar com isso
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Passamos um segundo argumento 'aluno' para a função login saber qual API chamar
+      // Passamos o tipo 'aluno' para a função de login
       await login(email, senha, 'aluno'); 
       navigate('/aluno/dashboard'); // Redireciona para o dashboard DO ALUNO
     } catch (error) {
-      toast.error('Falha no login. Verifique suas credenciais ou se sua senha já foi definida.');
+      toast.error('Falha no login. Verifique as suas credenciais ou se a sua senha já foi definida.');
     }
   };
 

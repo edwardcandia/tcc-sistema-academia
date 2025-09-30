@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
-import { Container, Typography, Box, Paper, List, ListItem, ListItemText, Divider, Button } from '@mui/material';
+import { Container, Typography, Box, Paper, List, ListItem, ListItemText, Divider, Button, CircularProgress } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 
 function AlunoDashboardPage() {
@@ -10,27 +10,42 @@ function AlunoDashboardPage() {
     const navigate = useNavigate();
     const [meusDados, setMeusDados] = useState(null);
     const [meusPagamentos, setMeusPagamentos] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
+            if (!authHeader) return;
             try {
-                const resDados = await axios.get('http://localhost:3001/api/portal/meus-dados', authHeader());
-                const resPagamentos = await axios.get('http://localhost:3001/api/portal/meus-pagamentos', authHeader());
+                setLoading(true);
+                const [resDados, resPagamentos] = await Promise.all([
+                    axios.get('http://localhost:3001/api/portal/meus-dados', authHeader()),
+                    axios.get('http://localhost:3001/api/portal/meus-pagamentos', authHeader())
+                ]);
                 setMeusDados(resDados.data);
                 setMeusPagamentos(resPagamentos.data);
             } catch (error) {
                 console.error("Erro ao buscar dados do portal do aluno:", error);
+            } finally {
+                setLoading(false);
             }
         };
-        if (authHeader) {
-            fetchData();
-        }
+        fetchData();
     }, [authHeader]);
 
     const handleLogout = () => {
         logout();
-        navigate('/aluno/login');
+        navigate('/login'); // <-- CORREÇÃO APLICADA AQUI
     };
+
+    if (loading) {
+        return (
+            <Container>
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+                    <CircularProgress />
+                </Box>
+            </Container>
+        );
+    }
 
     return (
         <Container maxWidth="md">
@@ -63,7 +78,7 @@ function AlunoDashboardPage() {
 
                 <Paper sx={{ p: 2, mt: 4 }}>
                     <Typography variant="h6" gutterBottom>Meu Histórico de Pagamentos</Typography>
-                    <List>
+                    <List sx={{ maxHeight: 200, overflow: 'auto' }}>
                         {meusPagamentos.length > 0 ? meusPagamentos.map(pg => (
                             <ListItem key={pg.id}>
                                 <ListItemText primary={`Pagamento de R$ ${parseFloat(pg.valor).toFixed(2)}`} secondary={`Realizado em ${pg.data_pagamento}`} />

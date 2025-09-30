@@ -7,19 +7,24 @@ import DashboardPage from './pages/DashboardPage';
 import AlunosPage from './pages/AlunosPage';
 import PlanosPage from './pages/PlanosPage';
 import RelatoriosPage from './pages/RelatoriosPage';
-import AlunoLoginPage from './pages/AlunoLoginPage'; // Importado
-import AlunoDashboardPage from './pages/AlunoDashboardPage'; // Importado
+import AlunoLoginPage from './pages/AlunoLoginPage';
+import AlunoDashboardPage from './pages/AlunoDashboardPage';
 import { useAuth } from './context/AuthContext';
 
-// Protege rotas de Admin/Atendente
+// --- A FUNÇÃO QUE ESTAVA EM FALTA ESTÁ AQUI ---
+// Componente para proteger rotas que exigem login de Admin/Atendente
 function PrivateRoute({ children, roles }) {
   const { token, user } = useAuth();
-  if (!token || !user) return <Navigate to="/login" />;
-  if (roles && !roles.includes(user.cargo)) return <Navigate to="/dashboard" />;
+  if (!token || !user) {
+    return <Navigate to="/login" />;
+  }
+  if (roles && !roles.includes(user.cargo)) {
+    return <Navigate to="/dashboard" />;
+  }
   return children;
 }
 
-// Protege rotas de Aluno
+// --- E A FUNÇÃO PARA PROTEGER AS ROTAS DE ALUNO ---
 function AlunoPrivateRoute({ children }) {
     const { token, aluno } = useAuth();
     return (token && aluno) ? children : <Navigate to="/aluno/login" />;
@@ -28,8 +33,10 @@ function AlunoPrivateRoute({ children }) {
 function App() {
   return (
     <Routes>
-      {/* Rotas de Admin/Atendente */}
+      {/* Rota de Login Unificada */}
       <Route path="/login" element={<Login />} />
+      
+      {/* Rotas de Admin/Atendente dentro do Layout */}
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<Navigate to="/dashboard" />} />
         <Route path="dashboard" element={<DashboardPage />} />
@@ -42,7 +49,7 @@ function App() {
       <Route path="/aluno/login" element={<AlunoLoginPage />} />
       <Route path="/aluno/dashboard" element={<AlunoPrivateRoute><AlunoDashboardPage /></AlunoPrivateRoute>} />
 
-      {/* Rota padrão */}
+      {/* Rota Padrão para qualquer outro caminho */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

@@ -1,35 +1,5 @@
-// backend/src/controllers/dashboardController.js
-const pool = require('../config/database');
-
-const getMetrics = async (req, res) => {
-  try {
-    // Executa todas as consultas em paralelo para mais eficiência
-    const [totalAlunosRes, alunosAtivosRes, totalPlanosRes, receitaMensalRes] = await Promise.all([
-      pool.query('SELECT COUNT(*) FROM alunos'),
-      pool.query("SELECT COUNT(*) FROM alunos WHERE status = 'ativo'"),
-      pool.query('SELECT COUNT(*) FROM planos'),
-      pool.query(`
-        SELECT SUM(p.valor) as receita_total
-        FROM alunos a
-        JOIN planos p ON a.plano_id = p.id
-        WHERE a.status = 'ativo'
-      `)
-    ]);
-
-    const metrics = {
-      totalAlunos: parseInt(totalAlunosRes.rows[0].count, 10),
-      alunosAtivos: parseInt(alunosAtivosRes.rows[0].count, 10),
-      totalPlanos: parseInt(totalPlanosRes.rows[0].count, 10),
-      receitaMensal: parseFloat(receitaMensalRes.rows[0].receita_total || 0).toFixed(2)
-    };
-
-    res.status(200).json(metrics);
-  } catch (error) {
-    console.error('Erro detalhado ao buscar métricas:', error);
-    res.status(500).json({ error: 'Erro ao buscar as métricas.' });
-  }
-};
-
-module.exports = {
-  getMetrics,
-};
+const db = require('../config/database');
+const getMetrics = async (req, res) => { try { const [totalAlunosRes, alunosAtivosRes, totalPlanosRes, receitaMensalRes] = await Promise.all([ db.query('SELECT COUNT(*) FROM alunos'), db.query("SELECT COUNT(*) FROM alunos WHERE status = 'ativo'"), db.query('SELECT COUNT(*) FROM planos'), db.query(`SELECT SUM(p.valor) as receita_total FROM alunos a JOIN planos p ON a.plano_id = p.id WHERE a.status = 'ativo'`) ]); const metrics = { totalAlunos: parseInt(totalAlunosRes.rows[0].count, 10), alunosAtivos: parseInt(alunosAtivosRes.rows[0].count, 10), totalPlanos: parseInt(totalPlanosRes.rows[0].count, 10), receitaMensal: parseFloat(receitaMensalRes.rows[0].receita_total || 0).toFixed(2) }; res.status(200).json(metrics); } catch (error) { res.status(500).json({ error: 'Erro ao buscar as métricas.' }); }};
+const getAniversariantesDoMes = async (req, res) => { try { const query = `SELECT id, nome_completo, TO_CHAR(data_nascimento, 'DD/MM') as aniversario FROM alunos WHERE EXTRACT(MONTH FROM data_nascimento) = EXTRACT(MONTH FROM NOW()) AND status = 'ativo' ORDER BY EXTRACT(DAY FROM data_nascimento) ASC;`; const result = await db.query(query); res.status(200).json(result.rows); } catch (error) { res.status(500).json({ error: 'Erro ao buscar aniversariantes.' }); }};
+const getPagamentosVencendo = async (req, res) => { try { const query = `SELECT id, nome_completo, TO_CHAR(proximo_vencimento, 'DD/MM/YYYY') as vencimento FROM alunos WHERE status = 'ativo' AND proximo_vencimento BETWEEN NOW() AND NOW() + INTERVAL '7 days' ORDER BY proximo_vencimento ASC;`; const result = await db.query(query); res.status(200).json(result.rows); } catch (error) { res.status(500).json({ error: 'Erro ao buscar pagamentos próximos.' }); }};
+module.exports = { getMetrics, getAniversariantesDoMes, getPagamentosVencendo };
