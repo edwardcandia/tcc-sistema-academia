@@ -21,8 +21,7 @@ const pagamentosRoutes = require('./src/routes/pagamentosRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const relatoriosRoutes = require('./src/routes/relatoriosRoutes');
 const portalRoutes = require('./src/routes/portalRoutes');
-const exerciciosRoutes = require('./src/routes/exerciciosRoutes');
-const modelosTreinoRoutes = require('./src/routes/modelosTreinoRoutes');
+const exerciciosRoutes = require('./src/routes/exerciciosRoutes'); // <-- ADICIONADO
 
 app.use('/api', authRoutes);
 app.use('/api', planosRoutes);
@@ -32,7 +31,6 @@ app.use('/api', pagamentosRoutes);
 app.use('/api', relatoriosRoutes);
 app.use('/api', portalRoutes);
 app.use('/api', exerciciosRoutes);
-app.use('/api', modelosTreinoRoutes);
 
 app.listen(PORT, () => {
   console.log(`--- Servidor rodando na porta ${PORT} ---`);

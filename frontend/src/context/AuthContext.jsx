@@ -9,7 +9,22 @@ export const AuthProvider = ({ children }) => {
   const [aluno, setAluno] = useState(null);
   const [token, setToken] = useState(null);
 
-  useEffect(() => { /* ... (código igual ao anterior, sem alterações) ... */ });
+  useEffect(() => {
+    // Carregar dados do localStorage ao inicializar
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    const storedAluno = localStorage.getItem('aluno');
+    
+    if (storedToken) {
+      setToken(storedToken);
+      
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+      } else if (storedAluno) {
+        setAluno(JSON.parse(storedAluno));
+      }
+    }
+  }, []);
 
   // --- FUNÇÃO DE LOGIN ATUALIZADA ---
   const login = async (email, senha) => {
@@ -37,8 +52,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => { /* ... (código igual ao anterior, sem alterações) ... */ };
-  const authHeader = () => ({ headers: { Authorization: `Bearer ${token}` } });
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    localStorage.removeItem('aluno');
+    setToken(null);
+    setUser(null);
+    setAluno(null);
+  };
+  const authHeader = () => {
+    // Verificar se o token existe antes de retornar o cabeçalho
+    if (!token) {
+      console.warn('Tentando usar authHeader, mas o token não existe');
+      return {};
+    }
+    return { headers: { Authorization: `Bearer ${token}` } };
+  };
 
   return (
     <AuthContext.Provider value={{ user, aluno, token, login, logout, authHeader }}>
