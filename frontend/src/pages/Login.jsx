@@ -14,10 +14,10 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Chama a função de login sem o tipo
+      // Login unificado - detecta automaticamente o tipo de usuário
       const tipoUsuarioLogado = await login(email, senha);
       
-      // Redireciona com base na resposta que a função login nos deu
+      // Redireciona com base no tipo de usuário detectado
       if (tipoUsuarioLogado === 'aluno') {
         navigate('/aluno/dashboard');
       } else {
@@ -32,10 +32,10 @@ function Login() {
     <Container component="main" maxWidth="xs">
       <Paper elevation={6} sx={{ marginTop: 8, padding: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Typography component="h1" variant="h5">
-          Login S.G.A
+          Sistema de Gestão de Academia
         </Typography>
-        <Typography component="p" variant="body2" sx={{ mt: 1 }}>
-          Acesso para Gestores e Alunos
+        <Typography component="p" variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
+          Acesso Unificado - Administradores, Atendentes e Alunos
         </Typography>
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
           <TextField margin="normal" required fullWidth id="email" label="Endereço de Email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} />

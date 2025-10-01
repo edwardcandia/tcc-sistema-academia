@@ -11,11 +11,19 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import Dialog from '@mui/material/Dialog';
+import DialogActions from '@mui/material/DialogActions';
+import DialogContent from '@mui/material/DialogContent';
+import DialogTitle from '@mui/material/DialogTitle';
 import { toast } from 'react-toastify';
 
 function ModelosTreinoPage() {
   const [modelos, setModelos] = useState([]);
   const [formData, setFormData] = useState({ nome: '', descricao: '' });
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [duplicateFormData, setDuplicateFormData] = useState({ nome: '', descricao: '' });
+  const [selectedModeloId, setSelectedModeloId] = useState(null);
   const { authHeader } = useAuth();
   const navigate = useNavigate();
 
@@ -61,8 +69,32 @@ function ModelosTreinoPage() {
   };
 
   const handleEdit = (id) => {
-    // Navega para a página de detalhes para edição, que criaremos a seguir
+    // Navega para a página de detalhes para edição
     navigate(`/modelos-treino/${id}`);
+  };
+  
+  const handleDuplicateDialog = (modelo) => {
+    setSelectedModeloId(modelo.id);
+    setDuplicateFormData({ 
+      nome: `Cópia de ${modelo.nome}`, 
+      descricao: modelo.descricao 
+    });
+    setDuplicateDialogOpen(true);
+  };
+  
+  const handleDuplicate = async () => {
+    try {
+      await axios.post(
+        `http://localhost:3001/api/modelos-treino/${selectedModeloId}/duplicar`, 
+        duplicateFormData, 
+        authHeader()
+      );
+      toast.success("Modelo de treino duplicado com sucesso!");
+      setDuplicateDialogOpen(false);
+      fetchModelos();
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Falha ao duplicar modelo.");
+    }
   };
 
   return (
@@ -100,10 +132,27 @@ function ModelosTreinoPage() {
                   <TableCell>{modelo.nome}</TableCell>
                   <TableCell>{modelo.descricao}</TableCell>
                   <TableCell align="right">
-                    <IconButton onClick={() => handleEdit(modelo.id)} color="primary" title="Editar / Ver Exercícios">
+                    <IconButton 
+                      onClick={() => handleEdit(modelo.id)} 
+                      color="primary" 
+                      title="Editar / Ver Exercícios"
+                    >
                       <EditIcon />
                     </IconButton>
-                    <IconButton onClick={() => handleDelete(modelo.id)} color="error"><DeleteIcon /></IconButton>
+                    <IconButton 
+                      onClick={() => handleDuplicateDialog(modelo)} 
+                      color="info" 
+                      title="Duplicar Modelo"
+                    >
+                      <ContentCopyIcon />
+                    </IconButton>
+                    <IconButton 
+                      onClick={() => handleDelete(modelo.id)} 
+                      color="error" 
+                      title="Excluir Modelo"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
                   </TableCell>
                 </TableRow>
               ))}
@@ -111,6 +160,40 @@ function ModelosTreinoPage() {
           </Table>
         </TableContainer>
       </Paper>
+      
+      {/* Dialog de duplicação de modelo */}
+      <Dialog open={duplicateDialogOpen} onClose={() => setDuplicateDialogOpen(false)}>
+        <DialogTitle>Duplicar Modelo de Treino</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            margin="dense"
+            name="nome"
+            label="Nome do Novo Modelo"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={duplicateFormData.nome}
+            onChange={(e) => setDuplicateFormData({...duplicateFormData, nome: e.target.value})}
+          />
+          <TextField
+            margin="dense"
+            name="descricao"
+            label="Descrição (Opcional)"
+            type="text"
+            fullWidth
+            variant="outlined"
+            multiline
+            rows={2}
+            value={duplicateFormData.descricao}
+            onChange={(e) => setDuplicateFormData({...duplicateFormData, descricao: e.target.value})}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDuplicateDialogOpen(false)}>Cancelar</Button>
+          <Button onClick={handleDuplicate} variant="contained">Duplicar</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

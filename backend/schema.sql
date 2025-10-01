@@ -55,6 +55,8 @@ CREATE TABLE exercicios (
     nome VARCHAR(255) NOT NULL UNIQUE,
     grupo_muscular VARCHAR(100) NOT NULL,
     link_video VARCHAR(255),
+    imagem_url VARCHAR(500), -- URL da imagem demonstrativa
+    instrucoes TEXT, -- Instruções detalhadas de execução
     data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -86,6 +88,21 @@ CREATE TABLE itens_treino (
     observacoes TEXT,
     CONSTRAINT fk_modelo_treino FOREIGN KEY (modelo_treino_id) REFERENCES modelos_treino(id) ON DELETE CASCADE,
     CONSTRAINT fk_exercicio FOREIGN KEY (exercicio_id) REFERENCES exercicios(id)
+);
+
+-- Tabela para associar modelos de treino aos alunos
+CREATE TABLE alunos_modelos_treino (
+    id SERIAL PRIMARY KEY,
+    aluno_id INTEGER NOT NULL,
+    modelo_treino_id INTEGER NOT NULL,
+    data_atribuicao TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    data_inicio DATE,
+    data_fim DATE,
+    status VARCHAR(20) DEFAULT 'ativo' CHECK (status IN ('ativo', 'concluido', 'cancelado')),
+    observacoes TEXT,
+    CONSTRAINT fk_aluno FOREIGN KEY (aluno_id) REFERENCES alunos(id) ON DELETE CASCADE,
+    CONSTRAINT fk_modelo_treino FOREIGN KEY (modelo_treino_id) REFERENCES modelos_treino(id) ON DELETE CASCADE,
+    UNIQUE(aluno_id, modelo_treino_id) -- Evita duplicatas
 );
 
 -- Inserindo alguns exercícios de exemplo

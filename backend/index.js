@@ -21,7 +21,10 @@ const pagamentosRoutes = require('./src/routes/pagamentosRoutes');
 const authRoutes = require('./src/routes/authRoutes');
 const relatoriosRoutes = require('./src/routes/relatoriosRoutes');
 const portalRoutes = require('./src/routes/portalRoutes');
-const exerciciosRoutes = require('./src/routes/exerciciosRoutes'); // <-- ADICIONADO
+const exerciciosRoutes = require('./src/routes/exerciciosRoutes');
+const modelosTreinoRoutes = require('./src/routes/modelosTreinoRoutes');
+const registroTreinoRoutes = require('./src/routes/registroTreinoRoutes');
+const notificacoesRoutes = require('./src/routes/notificacoesRoutes');
 
 app.use('/api', authRoutes);
 app.use('/api', planosRoutes);
@@ -31,6 +34,9 @@ app.use('/api', pagamentosRoutes);
 app.use('/api', relatoriosRoutes);
 app.use('/api', portalRoutes);
 app.use('/api', exerciciosRoutes);
+app.use('/api', modelosTreinoRoutes);
+app.use('/api/registro-treino', registroTreinoRoutes);
+app.use('/api/notificacoes', notificacoesRoutes);
 
 app.listen(PORT, () => {
   console.log(`--- Servidor rodando na porta ${PORT} ---`);

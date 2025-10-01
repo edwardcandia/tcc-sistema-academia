@@ -14,9 +14,16 @@ const isValidYoutubeUrl = (url) => {
     return regex.test(url);
 };
 
+// Validar URL de imagem
+const isValidImageUrl = (url) => {
+    if (!url) return true; // URL opcional
+    const regex = /\.(jpg|jpeg|png|gif)$/i;
+    return regex.test(url);
+};
+
 // Criar um novo exercício
 const createExercicio = async (req, res) => {
-    const { nome, grupo_muscular, link_video } = req.body;
+    const { nome, grupo_muscular, link_video, imagem_url, instrucoes } = req.body;
     
     // Validações aprimoradas
     if (!nome || typeof nome !== 'string' || nome.trim().length < 3) {
@@ -46,8 +53,14 @@ const createExercicio = async (req, res) => {
         }
         
         const result = await db.query(
-            'INSERT INTO exercicios (nome, grupo_muscular, link_video) VALUES ($1, $2, $3) RETURNING *',
-            [nome.trim(), grupo_muscular, link_video ? link_video.trim() : null]
+            'INSERT INTO exercicios (nome, grupo_muscular, link_video, imagem_url, instrucoes) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+            [
+                nome.trim(), 
+                grupo_muscular, 
+                link_video ? link_video.trim() : null,
+                imagem_url ? imagem_url.trim() : null,
+                instrucoes ? instrucoes.trim() : null
+            ]
         );
         
         console.log(`Exercício "${nome}" criado com sucesso pelo usuário ${req.user.id}`);
@@ -61,23 +74,83 @@ const createExercicio = async (req, res) => {
     }
 };
 
-// Obter todos os exercícios
+// Obter todos os exercícios com suporte a paginação e busca
 const getAllExercicios = async (req, res) => {
     try {
-        const { grupo } = req.query;
+        const { 
+            grupo, 
+            page = 1, 
+            limit = 10,
+            search = '' 
+        } = req.query;
         
-        let query = 'SELECT * FROM exercicios';
+        // Converter para números
+        const pageNumber = parseInt(page);
+        const limitNumber = parseInt(limit);
+        
+        // Validar parâmetros de paginação
+        if (pageNumber < 1 || limitNumber < 1 || limitNumber > 100) {
+            return res.status(400).json({ 
+                error: 'Parâmetros de paginação inválidos. A página deve ser >= 1 e o limite entre 1 e 100.' 
+            });
+        }
+        
+        // Calcular o offset para a paginação
+        const offset = (pageNumber - 1) * limitNumber;
+        
+        // Iniciar a construção da consulta
+        let queryWhere = [];
         const params = [];
+        let paramIndex = 1;
         
+        // Adicionar filtro de grupo muscular se fornecido
         if (grupo && GRUPOS_MUSCULARES.includes(grupo)) {
-            query += ' WHERE grupo_muscular = $1';
+            queryWhere.push(`grupo_muscular = $${paramIndex++}`);
             params.push(grupo);
         }
         
-        query += ' ORDER BY grupo_muscular, nome ASC';
+        // Adicionar busca por nome se fornecida
+        if (search.trim()) {
+            queryWhere.push(`LOWER(nome) LIKE LOWER($${paramIndex++})`);
+            params.push(`%${search.trim()}%`);
+        }
+        
+        // Construir a cláusula WHERE
+        const whereClause = queryWhere.length > 0 ? `WHERE ${queryWhere.join(' AND ')}` : '';
+        
+        // Consulta para contar o total de resultados
+        const countQuery = `SELECT COUNT(*) FROM exercicios ${whereClause}`;
+        const countResult = await db.query(countQuery, params);
+        const total = parseInt(countResult.rows[0].count);
+        
+        // Consulta para buscar os exercícios paginados
+        const query = `
+            SELECT * FROM exercicios 
+            ${whereClause} 
+            ORDER BY grupo_muscular, nome ASC
+            LIMIT $${paramIndex++} OFFSET $${paramIndex++}
+        `;
+        
+        // Adicionar parâmetros de paginação
+        params.push(limitNumber, offset);
         
         const result = await db.query(query, params);
-        res.status(200).json(result.rows);
+        
+        // Calcular o total de páginas
+        const totalPages = Math.ceil(total / limitNumber);
+        
+        // Retornar os resultados com metadados de paginação
+        res.status(200).json({
+            exercicios: result.rows,
+            pagination: {
+                total,
+                totalPages,
+                currentPage: pageNumber,
+                limit: limitNumber,
+                hasNextPage: pageNumber < totalPages,
+                hasPrevPage: pageNumber > 1
+            }
+        });
     } catch (error) {
         console.error('Erro ao buscar exercícios:', error);
         res.status(500).json({ error: 'Erro ao buscar exercícios. Por favor, tente novamente.' });
@@ -87,7 +160,7 @@ const getAllExercicios = async (req, res) => {
 // Atualizar um exercício
 const updateExercicio = async (req, res) => {
     const { id } = req.params;
-    const { nome, grupo_muscular, link_video } = req.body;
+    const { nome, grupo_muscular, link_video, imagem_url, instrucoes } = req.body;
     
     // Validações aprimoradas
     if (!nome || typeof nome !== 'string' || nome.trim().length < 3) {
@@ -103,6 +176,10 @@ const updateExercicio = async (req, res) => {
     
     if (link_video && !isValidYoutubeUrl(link_video)) {
         return res.status(400).json({ error: 'URL de vídeo inválida. Deve ser uma URL do YouTube.' });
+    }
+    
+    if (imagem_url && !isValidImageUrl(imagem_url)) {
+        return res.status(400).json({ error: 'URL de imagem inválida. Deve terminar com .jpg, .jpeg, .png ou .gif.' });
     }
     
     try {
@@ -125,8 +202,15 @@ const updateExercicio = async (req, res) => {
         }
         
         const result = await db.query(
-            'UPDATE exercicios SET nome = $1, grupo_muscular = $2, link_video = $3 WHERE id = $4 RETURNING *',
-            [nome.trim(), grupo_muscular, link_video ? link_video.trim() : null, id]
+            'UPDATE exercicios SET nome = $1, grupo_muscular = $2, link_video = $3, imagem_url = $4, instrucoes = $5 WHERE id = $6 RETURNING *',
+            [
+                nome.trim(), 
+                grupo_muscular, 
+                link_video ? link_video.trim() : null,
+                imagem_url ? imagem_url.trim() : null,
+                instrucoes ? instrucoes.trim() : null,
+                id
+            ]
         );
         
         console.log(`Exercício ID ${id} atualizado com sucesso pelo usuário ${req.user.id}`);
@@ -196,7 +280,7 @@ const getExercicioById = async (req, res) => {
         res.status(200).json(result.rows[0]);
     } catch (error) {
         console.error('Erro ao buscar exercício por ID:', error);
-        res.status(500).json({ error: 'Erro ao buscar detalhes do exercício.' });
+        res.status(500).json({ error: 'Erro ao buscar exercício. Por favor, tente novamente.' });
     }
 };
 

@@ -3,6 +3,38 @@ const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
+// Função para verificar a validade de um token
+const verifyToken = (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+      return res.json({ valid: false, message: 'Token não fornecido.' });
+    }
+
+    // O token vem no formato "Bearer [token]"
+    const token = authHeader.split(' ')[1];
+    if (!token) {
+      return res.json({ valid: false, message: 'Formato de token inválido.' });
+    }
+
+    // Verificar o token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'seu_segredo_jwt');
+    
+    // Token é válido
+    return res.json({ 
+      valid: true, 
+      user: { 
+        id: decoded.id, 
+        tipo: decoded.tipo,
+        cargo: decoded.cargo 
+      } 
+    });
+  } catch (error) {
+    console.error('Erro ao verificar token:', error);
+    return res.json({ valid: false, message: 'Token inválido ou expirado.' });
+  }
+};
+
 const registerUser = async (req, res) => {
     // Esta função para registrar admins/atendentes continua a mesma
     const { nome, email, senha, cargo } = req.body;
@@ -77,4 +109,5 @@ const login = async (req, res) => {
 module.exports = {
     registerUser,
     login,
+    verifyToken
 };
