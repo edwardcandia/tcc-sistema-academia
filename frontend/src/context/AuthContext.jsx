@@ -82,9 +82,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // --- FUNÇÃO DE LOGIN ATUALIZADA ---
-  const login = async (email, senha) => {
+  const login = async (email, senha, tipo) => {
     try {
       // Sempre chama a mesma rota unificada
+      console.log(`Tentando login com email: ${email}, tipo: ${tipo || 'não especificado'}`);
       const response = await axios.post(`${API_URL}/login`, { email, senha });
       
       const { token, user: userData, aluno: alunoData } = response.data;
@@ -94,12 +95,14 @@ export const AuthProvider = ({ children }) => {
 
       // Verifica o que o backend retornou para saber quem logou
       if (alunoData) {
+        console.log('Login como aluno bem-sucedido:', alunoData);
         localStorage.setItem('aluno', JSON.stringify(alunoData));
         setAluno(alunoData);
         setUser(null);
         localStorage.removeItem('user');
         return 'aluno'; // Retorna o tipo de usuário logado
       } else {
+        console.log('Login como funcionário bem-sucedido:', userData);
         localStorage.setItem('user', JSON.stringify(userData));
         setUser(userData);
         setAluno(null);
@@ -126,7 +129,10 @@ export const AuthProvider = ({ children }) => {
       console.warn('Tentando usar authHeader, mas o token não existe');
       return {};
     }
-    return { headers: { Authorization: `Bearer ${token}` } };
+    console.log('authHeader gerando cabeçalho com token:', token.substring(0, 15) + '...');
+    const headers = { Authorization: `Bearer ${token}` };
+    console.log('Cabeçalho gerado:', headers);
+    return { headers };
   };
 
   return (

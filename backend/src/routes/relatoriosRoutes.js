@@ -10,4 +10,11 @@ router.get('/relatorios/novos-alunos', verifyToken, authorizeRole(['administrado
 router.get('/relatorios/alunos-por-plano', verifyToken, authorizeRole(['administrador']), relatoriosController.getAlunosPorPlano);
 router.get('/relatorios/status-pagamentos', verifyToken, authorizeRole(['administrador']), relatoriosController.getStatusPagamentos);
 
+// Novos relatórios avançados
+router.get('/relatorios/frequencia-alunos', verifyToken, authorizeRole(['administrador']), relatoriosController.getFrequenciaAlunos);
+router.get('/relatorios/receitas', verifyToken, authorizeRole(['administrador']), relatoriosController.getReceitas);
+router.get('/relatorios/receitas-ultimos-meses', verifyToken, authorizeRole(['administrador']), relatoriosController.getReceitasUltimosMeses);
+router.get('/relatorios/desempenho-treinos', verifyToken, authorizeRole(['administrador']), relatoriosController.getDesempenhoTreinos);
+router.get('/relatorios/dashboard', verifyToken, authorizeRole(['administrador']), relatoriosController.getDashboardData);
+
 module.exports = router;

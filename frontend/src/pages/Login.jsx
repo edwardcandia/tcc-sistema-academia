@@ -24,6 +24,7 @@ function Login() {
         navigate('/dashboard');
       }
     } catch (error) {
+      console.error('Erro no login:', error);
       toast.error(error.response?.data?.error || 'Falha no login. Verifique as suas credenciais.');
     }
   };
@@ -32,10 +33,10 @@ function Login() {
     <Container component="main" maxWidth="xs">
       <Paper elevation={6} sx={{ marginTop: 8, padding: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <Typography component="h1" variant="h5">
-          Sistema de Gestão de Academia
+          PlankGYM
         </Typography>
         <Typography component="p" variant="body2" sx={{ mt: 1, textAlign: 'center' }}>
-          Acesso Unificado - Administradores, Atendentes e Alunos
+          Sistema de Gestão para Academias - Acesso Administrativo
         </Typography>
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
           <TextField margin="normal" required fullWidth id="email" label="Endereço de Email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} />

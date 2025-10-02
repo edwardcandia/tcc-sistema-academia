@@ -14,10 +14,11 @@ function AlunoLoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Passamos o tipo 'aluno' para a função de login
-      await login(email, senha, 'aluno'); 
+      // Passamos o email e senha para a função de login (o parâmetro tipo não é mais necessário)
+      await login(email, senha); 
       navigate('/aluno/dashboard'); // Redireciona para o dashboard DO ALUNO
     } catch (error) {
+      console.error('Erro no login:', error);
       toast.error('Falha no login. Verifique as suas credenciais ou se a sua senha já foi definida.');
     }
   };

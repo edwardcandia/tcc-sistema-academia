@@ -1,0 +1,468 @@
+/**
+ * @swagger
+ * /api/registro-treino/registrar:
+ *   post:
+ *     summary: Registra um treino realizado pelo aluno
+ *     tags: [Registro de Treino]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegistroTreino'
+ *     responses:
+ *       201:
+ *         description: Treino registrado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Treino registrado com sucesso
+ *                 id:
+ *                   type: integer
+ *                   example: 1
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       404:
+ *         description: Treino não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+
+// backend/src/controllers/registroTreinoController.js
+const db = require('../config/database');
+const { ApiError, ErrorTypes, asyncHandler } = require('../utils/errorHandler');
+
+// Registrar a realização de um treino
+exports.registrarTreino = asyncHandler(async (req, res) => {
+    const { treino_id, data, duracao, observacoes, avaliacao, aluno_id } = req.body;
+    
+    if (!aluno_id) {
+        throw new ApiError('ID do aluno é obrigatório', 400, ErrorTypes.VALIDATION_ERROR);
+    }
+
+    // Verificar se o treino existe e está atribuído ao aluno
+    const treino = await db.query(`
+        SELECT mt.id 
+        FROM modelos_treino mt
+        JOIN alunos_modelos_treino amt ON mt.id = amt.modelo_treino_id
+        WHERE mt.id = $1 AND amt.aluno_id = $2
+    `, [treino_id, aluno_id]);
+
+    if (treino.rows.length === 0) {
+        throw new ApiError(
+            ErrorTypes.NOT_FOUND.code,
+            'Treino não encontrado ou não atribuído a este aluno'
+        );
+    }
+
+    // Registrar o treino realizado usando uma transação
+    const result = await db.transaction(async (client) => {
+        // Inserir o registro do treino
+        const insertResult = await client.query(`
+            INSERT INTO registros_treino 
+                (aluno_id, treino_id, data_realizacao, duracao, observacoes, avaliacao) 
+            VALUES ($1, $2, $3, $4, $5, $6) 
+            RETURNING id
+        `, [aluno_id, treino_id, data, duracao, observacoes, avaliacao || 5]);
+        
+        // Podemos adicionar outras operações relacionadas dentro da mesma transação
+        // Por exemplo, atualizar estatísticas do aluno, registrar no histórico, etc.
+        
+        return insertResult.rows[0];
+    });
+
+    // Resposta de sucesso
+    res.status(201).json({
+        success: true,
+        message: 'Treino registrado com sucesso',
+        id: result.id
+    });
+});
+
+/**
+ * @swagger
+ * /api/registro-treino/historico:
+ *   get:
+ *     summary: Obtém o histórico de treinos realizados pelo aluno
+ *     tags: [Registro de Treino]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Histórico de treinos obtido com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/HistoricoTreino'
+ *       401:
+ *         $ref: '#/components/responses/UnauthorizedError'
+ *       500:
+ *         $ref: '#/components/responses/ServerError'
+ */
+// Obter histórico de treinos realizados
+exports.obterHistoricoTreinos = asyncHandler(async (req, res) => {
+    const { aluno_id } = req.query;
+    
+    // Verificar se o ID do aluno está definido
+    if (!aluno_id) {
+        throw new ApiError(
+            'ID do aluno não fornecido na requisição',
+            400,
+            ErrorTypes.VALIDATION_ERROR
+        );
+    }
+    
+    // Obter histórico de treinos com paginação
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+    
+    // Consultar total de registros para paginação
+    const countResult = await db.query(
+        'SELECT COUNT(*) FROM registros_treino WHERE aluno_id = $1',
+        [aluno_id]
+    );
+    
+    const total = parseInt(countResult.rows[0].count);
+    const totalPages = Math.ceil(total / limit);
+    
+    // Consultar registros paginados
+    const registros = await db.query(
+        `SELECT 
+            r.id, 
+            r.treino_id, 
+            mt.nome AS treino_nome, 
+            r.data_realizacao, 
+            r.duracao, 
+            r.observacoes, 
+            r.avaliacao,
+            TO_CHAR(r.data_realizacao, 'DD/MM/YYYY') AS data_formatada
+         FROM 
+            registros_treino r
+         JOIN 
+            modelos_treino mt ON r.treino_id = mt.id
+         WHERE 
+            r.aluno_id = $1
+         ORDER BY 
+            r.data_realizacao DESC
+         LIMIT $2 OFFSET $3`,
+        [aluno_id, limit, offset]
+    );
+
+    // Formatar resposta com paginação
+    res.status(200).json({
+        success: true,
+        data: registros.rows,
+        pagination: {
+            total,
+            totalPages,
+            currentPage: page,
+            limit
+        }
+    });
+});
+
+// Obter estatísticas de treino
+exports.obterEstatisticas = asyncHandler(async (req, res) => {
+    const { aluno_id } = req.query;
+    
+    if (!aluno_id) {
+        throw new ApiError(
+            'ID do aluno não fornecido na requisição',
+            400,
+            ErrorTypes.VALIDATION_ERROR
+        );
+    }
+    
+    // Total de treinos realizados
+    const totalTreinos = await db.query(
+        'SELECT COUNT(*) as total FROM registros_treino WHERE aluno_id = $1',
+        [aluno_id]
+    );
+    
+    // Tempo total de treino (em minutos)
+    const tempoTotal = await db.query(
+        'SELECT SUM(duracao) as total_minutos FROM registros_treino WHERE aluno_id = $1',
+        [aluno_id]
+    );
+    
+    // Treinos por tipo (agrupados pelo modelo de treino)
+    const treinosPorTipo = await db.query(
+        `SELECT mt.nome, COUNT(*) as quantidade 
+         FROM registros_treino rt 
+         JOIN modelos_treino mt ON rt.treino_id = mt.id 
+         WHERE rt.aluno_id = $1 
+         GROUP BY mt.nome`,
+        [aluno_id]
+    );
+    
+    // Avaliação média
+    const avaliacaoMedia = await db.query(
+        'SELECT AVG(avaliacao) as media FROM registros_treino WHERE aluno_id = $1',
+        [aluno_id]
+    );
+    
+    // Frequência mensal (últimos 6 meses)
+    const frequenciaMensal = await db.query(
+        `SELECT 
+            TO_CHAR(data_realizacao, 'YYYY-MM') as mes,
+            COUNT(*) as quantidade
+         FROM registros_treino
+         WHERE aluno_id = $1 AND data_realizacao >= CURRENT_DATE - INTERVAL '6 months'
+         GROUP BY TO_CHAR(data_realizacao, 'YYYY-MM')
+         ORDER BY mes`,
+        [aluno_id]
+    );
+
+    res.status(200).json({
+        success: true,
+        data: {
+            total_treinos: parseInt(totalTreinos.rows[0].total),
+            tempo_total: tempoTotal.rows[0].total_minutos || 0,
+            treinos_por_tipo: treinosPorTipo.rows,
+            avaliacao_media: avaliacaoMedia.rows[0].media || 0,
+            frequencia_mensal: frequenciaMensal.rows
+        }
+    });
+});
+
+// Excluir registro de treino
+exports.excluirRegistroTreino = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const { aluno_id } = req.query;
+    
+    if (!aluno_id) {
+        throw new ApiError(
+            'ID do aluno não fornecido na requisição',
+            400,
+            ErrorTypes.VALIDATION_ERROR
+        );
+    }
+
+    // Verificar se o registro pertence ao aluno
+    const registro = await db.query(
+        'SELECT id FROM registros_treino WHERE id = $1 AND aluno_id = $2',
+        [id, aluno_id]
+    );
+
+    if (registro.rows.length === 0) {
+        throw new ApiError(
+            ErrorTypes.NOT_FOUND.code,
+            'Registro de treino não encontrado ou não pertence a este aluno'
+        );
+    }
+
+    // Excluir o registro
+    await db.query(
+        'DELETE FROM registros_treino WHERE id = $1',
+        [id]
+    );
+
+    res.status(200).json({
+        success: true,
+        message: 'Registro de treino excluído com sucesso'
+    });
+});
+
+// Obter frequência semanal de treinos
+exports.obterFrequenciaSemanal = asyncHandler(async (req, res) => {
+    const { dataInicio, dataFim, aluno_id } = req.query;
+    
+    if (!aluno_id) {
+        throw new ApiError(
+            ErrorTypes.BAD_REQUEST.code,
+            'ID do aluno não fornecido na requisição'
+        );
+    }
+
+    if (!dataInicio || !dataFim) {
+        throw new ApiError(
+            ErrorTypes.BAD_REQUEST.code,
+            'Data de início e fim são obrigatórias'
+        );
+    }
+
+    const frequencia = await db.query(
+        `SELECT 
+            DATE_TRUNC('week', data_realizacao) as semana,
+            COUNT(*) as total_treinos
+         FROM registros_treino
+         WHERE aluno_id = $1 
+            AND data_realizacao BETWEEN $2 AND $3
+         GROUP BY semana
+         ORDER BY semana`,
+        [aluno_id, dataInicio, dataFim]
+    );
+
+    res.status(200).json({
+        success: true,
+        data: frequencia.rows
+    });
+});
+
+// Obter avaliações médias por tipo de treino
+exports.obterAvaliacoesTreino = asyncHandler(async (req, res) => {
+    const { aluno_id } = req.query;
+    
+    if (!aluno_id) {
+        throw new ApiError(
+            ErrorTypes.BAD_REQUEST.code,
+            'ID do aluno não fornecido na requisição'
+        );
+    }
+
+    const avaliacoes = await db.query(
+        `SELECT 
+            mt.nome as treino_nome,
+            AVG(rt.avaliacao) as avaliacao_media,
+            COUNT(*) as total_treinos
+         FROM registros_treino rt
+         JOIN modelos_treino mt ON rt.treino_id = mt.id
+         WHERE rt.aluno_id = $1 AND rt.avaliacao IS NOT NULL
+         GROUP BY mt.nome
+         ORDER BY avaliacao_media DESC`,
+        [aluno_id]
+    );
+
+    res.status(200).json({
+        success: true,
+        data: avaliacoes.rows
+    });
+}); /   O b t e r   h i s t � � r i c o   d e   t r e i n o s   r e a l i z a d o s   p o r   u m   a l u n o   e s p e c � � f i c o   ( p a r a   a d m i n / a t e n d e n t e s )  
+ e x p o r t s . o b t e r H i s t o r i c o T r e i n o s A l u n o   =   a s y n c   ( r e q ,   r e s )   = >   {  
+         t r y   {  
+                 c o n s t   {   a l u n o _ i d   }   =   r e q . p a r a m s ;  
+                  
+                 / /   V e r i f i c a r   s e   o   I D   d o   a l u n o   e s t � �   d e f i n i d o  
+                 i f   ( ! a l u n o _ i d )   {  
+                         r e t u r n   r e s . s t a t u s ( 4 0 0 ) . j s o n ( {  
+                                 s u c c e s s :   f a l s e ,  
+                                 m e s s a g e :   ' I D   d o   a l u n o   n � � o   f o r n e c i d o   n a   r e q u i s i � � � � o '  
+                         } ) ;  
+                 }  
+                  
+                 / /   V e r i f i c a r   s e   o   a l u n o   e x i s t e  
+                 c o n s t   a l u n o C h e c k   =   a w a i t   d b . q u e r y ( ' S E L E C T   i d   F R O M   a l u n o s   W H E R E   i d   =   $ 1 ' ,   [ a l u n o _ i d ] ) ;  
+                 i f   ( a l u n o C h e c k . r o w s . l e n g t h   = = =   0 )   {  
+                         r e t u r n   r e s . s t a t u s ( 4 0 4 ) . j s o n ( {  
+                                 s u c c e s s :   f a l s e ,  
+                                 m e s s a g e :   ' A l u n o   n � � o   e n c o n t r a d o '  
+                         } ) ;  
+                 }  
+                  
+                 / /   O b t e r   h i s t � � r i c o   d e   t r e i n o s  
+                 c o n s t   r e s u l t   =   a w a i t   d b . q u e r y ( `  
+                         S E L E C T    
+                                 r t . i d ,  
+                                 r t . d a t a _ r e a l i z a c a o ,  
+                                 r t . d u r a c a o ,  
+                                 r t . o b s e r v a c o e s ,  
+                                 r t . a v a l i a c a o ,  
+                                 r t . c r e a t e d _ a t ,  
+                                 m t . n o m e   a s   n o m e _ t r e i n o ,  
+                                 m t . d e s c r i c a o   a s   d e s c r i c a o _ t r e i n o  
+                         F R O M    
+                                 r e g i s t r o s _ t r e i n o   r t  
+                         J O I N    
+                                 m o d e l o s _ t r e i n o   m t   O N   r t . t r e i n o _ i d   =   m t . i d  
+                         W H E R E    
+                                 r t . a l u n o _ i d   =   $ 1  
+                         O R D E R   B Y    
+                                 r t . d a t a _ r e a l i z a c a o   D E S C  
+                 ` ,   [ a l u n o _ i d ] ) ;  
+                  
+                 r e s . s t a t u s ( 2 0 0 ) . j s o n ( {  
+                         s u c c e s s :   t r u e ,  
+                         t o t a l :   r e s u l t . r o w s . l e n g t h ,  
+                         d a t a :   r e s u l t . r o w s  
+                 } ) ;  
+         }   c a t c h   ( e r r o r )   {  
+                 c o n s o l e . e r r o r ( ' E r r o   a o   o b t e r   h i s t � � r i c o   d e   t r e i n o s : ' ,   e r r o r ) ;  
+                 r e s . s t a t u s ( 5 0 0 ) . j s o n ( {  
+                         s u c c e s s :   f a l s e ,  
+                         m e s s a g e :   ' E r r o   a o   o b t e r   h i s t � � r i c o   d e   t r e i n o s ' ,  
+                         e r r o r :   e r r o r . m e s s a g e  
+                 } ) ;  
+         }  
+ } ;  
+ 
+// Obter histórico de treinos realizados por um aluno específico (para admin/atendentes)
+exports.obterHistoricoTreinosAluno = async (req, res) => {
+    try {
+        const { aluno_id } = req.params;
+        
+        // Verificar se o ID do aluno está definido
+        if (!aluno_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID do aluno não fornecido na requisição'
+            });
+        }
+        
+        // Verificar se o aluno existe
+        const alunoCheck = await db.query('SELECT id FROM alunos WHERE id = $1', [aluno_id]);
+        if (alunoCheck.rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Aluno não encontrado'
+            });
+        }
+        
+        // Obter histórico de treinos
+        const result = await db.query(`
+            SELECT 
+                rt.id,
+                rt.data_realizacao,
+                rt.duracao,
+                rt.observacoes,
+                rt.avaliacao,
+                rt.created_at,
+                mt.nome as nome_treino,
+                mt.descricao as descricao_treino
+            FROM 
+                registros_treino rt
+            LEFT JOIN 
+                modelos_treino mt ON rt.treino_id = mt.id
+            WHERE 
+                rt.aluno_id = $1
+            ORDER BY 
+                rt.data_realizacao DESC
+        `, [aluno_id]);
+        
+        res.status(200).json({
+            success: true,
+            total: result.rows.length,
+            data: result.rows
+        });
+    } catch (error) {
+        console.error('Erro ao obter histórico de treinos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao obter histórico de treinos',
+            error: error.message
+        });
+    }
+};

@@ -2,12 +2,10 @@
 const express = require('express');
 const router = express.Router();
 const modelosTreinoController = require('../controllers/modelosTreinoController');
-const verifyToken = require('../middleware/verifyToken');
-const verifyAlunoToken = require('../middleware/verifyAlunoToken');
-const authorizeRole = require('../middleware/authorizeRole');
+const { authenticateUser, authorizeRoles } = require('../middleware/auth');
 
 // Rotas protegidas para administradores
-router.use('/modelos-treino', verifyToken, authorizeRole(['administrador']));
+router.use('/modelos-treino', authenticateUser, authorizeRoles(['administrador']));
 
 router.route('/modelos-treino')
     .post(modelosTreinoController.createModeloTreino)
@@ -22,10 +20,10 @@ router.delete('/modelos-treino/exercicios/:exercicioDoModeloId', modelosTreinoCo
 router.post('/modelos-treino/:id/duplicar', modelosTreinoController.duplicateModeloTreino);
 
 // Rotas para atribuição de modelos a alunos (apenas para administradores)
-router.post('/modelos-treino/alunos/:alunoId/:modeloTreinoId', verifyToken, authorizeRole(['administrador']), modelosTreinoController.assignModeloTreinoToAluno);
-router.delete('/modelos-treino/alunos/:alunoId/:modeloTreinoId', verifyToken, authorizeRole(['administrador']), modelosTreinoController.removeModeloTreinoFromAluno);
+router.post('/modelos-treino/alunos/:alunoId/:modeloTreinoId', authenticateUser, authorizeRoles(['administrador']), modelosTreinoController.assignModeloTreinoToAluno);
+router.delete('/modelos-treino/alunos/:alunoId/:modeloTreinoId', authenticateUser, authorizeRoles(['administrador']), modelosTreinoController.removeModeloTreinoFromAluno);
 
-// Rota para alunos consultarem seus próprios modelos de treino (usa verificação de token de aluno)
-router.get('/alunos/:alunoId/modelos-treino', verifyAlunoToken, modelosTreinoController.getModelosTreinoByAlunoId);
+// Rota para alunos consultarem seus próprios modelos de treino (autenticação removida)
+router.get('/alunos/:alunoId/modelos-treino', modelosTreinoController.getModelosTreinoByAlunoId);
 
 module.exports = router;

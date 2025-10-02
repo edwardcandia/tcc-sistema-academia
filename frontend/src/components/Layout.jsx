@@ -8,7 +8,9 @@ import ListAltIcon from '@mui/icons-material/ListAlt';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import LogoutIcon from '@mui/icons-material/Logout';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
-import ViewListIcon from '@mui/icons-material/ViewList'; // Novo ícone
+import ViewListIcon from '@mui/icons-material/ViewList';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { useAuth } from '../context/AuthContext';
 
 const drawerWidth = 240;
@@ -27,7 +29,8 @@ function Layout() {
     { text: 'Alunos', path: '/alunos', icon: <PeopleIcon />, roles: ['administrador', 'atendente'] },
     { text: 'Planos', path: '/planos', icon: <ListAltIcon />, roles: ['administrador'] },
     { text: 'Exercícios', path: '/exercicios', icon: <FitnessCenterIcon />, roles: ['administrador'] },
-    { text: 'Modelos de Treino', path: '/modelos-treino', icon: <ViewListIcon />, roles: ['administrador'] }, // <-- ADICIONADO
+    { text: 'Modelos de Treino', path: '/modelos-treino', icon: <ViewListIcon />, roles: ['administrador'] },
+    { text: 'Notificações', path: '/notificacoes-automaticas', icon: <NotificationsActiveIcon />, roles: ['administrador'] },
     { text: 'Relatórios', path: '/relatorios', icon: <AssessmentIcon />, roles: ['administrador'] },
   ];
 
@@ -37,7 +40,7 @@ function Layout() {
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
           <Typography variant="h6" noWrap component="div">
-            S.G.A: Sistema de Gestão
+            PlankGYM
           </Typography>
         </Toolbar>
       </AppBar>

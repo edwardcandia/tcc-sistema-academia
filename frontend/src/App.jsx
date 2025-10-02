@@ -1,11 +1,20 @@
 // frontend/src/App.jsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import Layout from './components/Layout';
-import { Box, CircularProgress } from '@mui/material';
+import { Box, CircularProgress, CssBaseline } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+
+// Context providers
 import { useAuth } from './context/AuthContext';
+import { ToastProvider } from './components/common/ToastProvider';
 import ErrorBoundary from './components/ErrorBoundary';
+
+// Theme
+import theme from './theme';
+
+// Layout components
+import Layout from './components/Layout';
+import Login from './pages/Login';
 
 // Importações diretas em vez de lazy
 import DashboardPage from './pages/DashboardPage';
@@ -18,6 +27,8 @@ import AlunoDashboardPage from './pages/AlunoDashboardPage';
 import ModelosTreinoPage from './pages/ModelosTreinoPage';
 import ModeloTreinoDetalhePage from './pages/ModeloTreinoDetalhePage';
 import AlunoTreinoDetalhePage from './pages/AlunoTreinoDetalhePage';
+import NotificacoesAutomaticasPage from './pages/NotificacoesAutomaticasPage';
+import SimplePage from './pages/SimplePage';
 
 function PrivateRoute({ children, roles }) {
   const { token, user } = useAuth();
@@ -28,7 +39,18 @@ function PrivateRoute({ children, roles }) {
 
 function AlunoPrivateRoute({ children }) {
   const { token, aluno } = useAuth();
-  return (token && aluno) ? children : <Navigate to="/login" />;
+  
+  console.log('AlunoPrivateRoute - token:', token ? 'Presente' : 'Ausente');
+  console.log('AlunoPrivateRoute - aluno:', aluno);
+  
+  // Se não tem token ou dados do aluno, redireciona para o login
+  if (!token || !aluno) {
+    console.log('Redirecionando para /aluno/login - Não autorizado');
+    return <Navigate to="/aluno/login" />;
+  }
+  
+  // Se tiver tudo correto, renderiza as rotas protegidas
+  return children;
 }
 
 // Componente de loading
@@ -40,8 +62,14 @@ const LoadingComponent = () => (
 
 function App() {
   return (
-    <ErrorBoundary>
-      <Routes>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <ToastProvider>
+        <ErrorBoundary>
+          <Routes>
+            {/* Página inicial simples para diagnóstico */}
+            <Route path="/simple" element={<SimplePage />} />
+        
         {/* Rotas de Admin/Atendente */}
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
@@ -64,6 +92,13 @@ function App() {
             </PrivateRoute>
           } />
 
+          {/* Rota de notificações automatizadas */}
+          <Route path="notificacoes-automaticas" element={
+            <PrivateRoute roles={['administrador']}>
+              <NotificacoesAutomaticasPage />
+            </PrivateRoute>
+          } />
+
           {/* ROTAS DE MODELOS DE TREINO */}
           <Route path="modelos-treino" element={
             <PrivateRoute roles={['administrador']}>
@@ -78,7 +113,7 @@ function App() {
         </Route>
 
         {/* Rotas do Portal do Aluno */}
-        <Route path="/aluno/login" element={<Navigate to="/login" />} /> {/* Redireciona para o login unificado */}
+        <Route path="/aluno/login" element={<AlunoLoginPage />} /> {/* Página de login específica para alunos */}
         <Route path="/aluno/dashboard" element={
           <AlunoPrivateRoute>
             <AlunoDashboardPage />
@@ -93,7 +128,9 @@ function App() {
         {/* Rota Padrão */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </ErrorBoundary>
+        </ErrorBoundary>
+      </ToastProvider>
+    </ThemeProvider>
   );
 }
 

@@ -2,21 +2,70 @@
 const express = require('express');
 const router = express.Router();
 const registroTreinoController = require('../controllers/registroTreinoController');
-const verifyAlunoToken = require('../middleware/verifyAlunoToken');
+const { validate, schemas } = require('../utils/validator');
+const { authenticateUser, authorizeRoles } = require('../middleware/auth');
 
-// Todas as rotas precisam de autenticação do aluno
-router.use(verifyAlunoToken);
+/**
+ * @swagger
+ * tags:
+ *   name: Registro de Treino
+ *   description: Operações administrativas para registrar e acompanhar os treinos realizados pelos alunos
+ */
 
-// Registrar um novo treino realizado
-router.post('/registrar', registroTreinoController.registrarTreino);
+// Proteção com autenticação administrativa
 
-// Obter histórico de treinos realizados
-router.get('/historico', registroTreinoController.obterHistoricoTreinos);
+// Registrar um novo treino realizado (apenas admin/atendente)
+router.post(
+  '/registrar', 
+  authenticateUser,
+  authorizeRoles(['administrador', 'atendente', 'instrutor']),
+  validate(schemas.registroTreino),
+  registroTreinoController.registrarTreino
+);
 
-// Obter estatísticas de treinos
-router.get('/estatisticas', registroTreinoController.obterEstatisticas);
+// Obter histórico de treinos realizados de um aluno
+router.get(
+  '/historico',
+  authenticateUser,
+  registroTreinoController.obterHistoricoTreinos
+);
 
-// Excluir um registro de treino
-router.delete('/:id', registroTreinoController.excluirRegistroTreino);
+// Obter histórico de treinos realizados de um aluno específico
+router.get(
+  '/aluno/:aluno_id',
+  authenticateUser,
+  authorizeRoles(['administrador', 'atendente', 'instrutor']),
+  registroTreinoController.obterHistoricoTreinosAluno
+);
+
+// Obter estatísticas de treinos de um aluno
+router.get(
+  '/estatisticas',
+  authenticateUser,
+  registroTreinoController.obterEstatisticas
+);
+
+// Obter frequência semanal de treinos
+router.get(
+  '/frequencia',
+  authenticateUser,
+  registroTreinoController.obterFrequenciaSemanal
+);
+
+// Obter avaliações médias por tipo de treino
+router.get(
+  '/avaliacoes',
+  authenticateUser,
+  registroTreinoController.obterAvaliacoes
+);
+
+// Excluir um registro de treino - desativado temporariamente
+// router.delete(
+//   '/:id',
+//   authenticateUser,
+//   authorizeRoles(['administrador', 'atendente', 'instrutor']),
+//   validate(schemas.id),
+//   registroTreinoController.excluirRegistroTreino
+// );
 
 module.exports = router;

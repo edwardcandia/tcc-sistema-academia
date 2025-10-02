@@ -121,36 +121,41 @@ const getDistribuicaoPlanos = async (req, res) => {
 // Retorna histórico de pagamentos dos últimos 6 meses
 const getHistoricoPagamentos = async (req, res) => {
   try {
-    // Simulação - em uma implementação real, você teria uma tabela de pagamentos
-    // Aqui vamos gerar dados simulados baseados nos planos e alunos ativos
+    // Consulta real aos dados de pagamentos dos últimos 6 meses
+    // Foi removido o terceiro parâmetro 'pt_BR' que causava o erro
+    const query = `
+      WITH meses AS (
+        SELECT
+            date_trunc('month', (current_date - (n || ' month')::interval)) AS mes_date,
+            TO_CHAR(date_trunc('month', (current_date - (n || ' month')::interval)), 'Mon/YYYY') AS mes_formatado
+        FROM generate_series(0, 5) n
+      ),
+      receitas AS (
+        SELECT 
+            date_trunc('month', data_pagamento) AS mes_date,
+            SUM(valor) AS receita_total
+        FROM pagamentos
+        WHERE data_pagamento >= NOW() - INTERVAL '6 months'
+        GROUP BY mes_date
+      )
+      SELECT 
+          m.mes_formatado,
+          COALESCE(r.receita_total, 0) AS receita_total
+      FROM meses m
+      LEFT JOIN receitas r ON m.mes_date = r.mes_date
+      ORDER BY m.mes_date ASC
+    `;
     
-    // Primeiro, pegamos a receita mensal atual
-    const receitaMensalRes = await db.query(`
-      SELECT SUM(p.valor) as receita_total 
-      FROM alunos a 
-      JOIN planos p ON a.plano_id = p.id 
-      WHERE a.status = 'ativo'
-    `);
+    const result = await db.query(query);
     
-    const receitaBase = parseFloat(receitaMensalRes.rows[0].receita_total || 0);
-    
-    // Gerar valores para os últimos 6 meses (simulado com variações aleatórias)
+    // Extrair meses e valores do resultado da consulta
     const meses = [];
     const valores = [];
     
-    const hoje = new Date();
-    for (let i = 5; i >= 0; i--) {
-      const data = new Date(hoje);
-      data.setMonth(hoje.getMonth() - i);
-      const mes = data.toLocaleString('pt-BR', { month: 'short' });
-      
-      // Simular variação na receita (entre -10% e +10% do valor base)
-      const variacao = Math.random() * 0.2 - 0.1; // entre -10% e +10%
-      const valor = receitaBase * (1 + variacao);
-      
-      meses.push(mes);
-      valores.push(Math.round(valor * 100) / 100); // Arredondar para 2 casas decimais
-    }
+    result.rows.forEach(row => {
+      meses.push(row.mes_formatado);
+      valores.push(parseFloat(row.receita_total || 0));
+    });
     
     res.status(200).json({
       meses,

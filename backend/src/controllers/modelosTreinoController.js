@@ -1,5 +1,6 @@
 // backend/src/controllers/modelosTreinoController.js
 const db = require('../config/database');
+const { ApiError, ErrorTypes, asyncHandler } = require('../utils/errorHandler');
 
 // Criar um novo modelo de treino (ex: "Treino A")
 const createModeloTreino = async (req, res) => {
@@ -158,32 +159,36 @@ const duplicateModeloTreino = async (req, res) => {
 }
 
 // Obter modelos de treino de um aluno específico
-const getModelosTreinoByAlunoId = async (req, res) => {
+const getModelosTreinoByAlunoId = asyncHandler(async (req, res) => {
     const { alunoId } = req.params;
     
-    try {
-        // Verificar se o aluno existe
-        const alunoResult = await db.query('SELECT id FROM alunos WHERE id = $1', [alunoId]);
-        if (alunoResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Aluno não encontrado.' });
-        }
-        
-        // Buscar os modelos de treino atribuídos ao aluno
-        const query = `
-            SELECT mt.id, mt.nome, mt.descricao 
-            FROM modelos_treino mt
-            JOIN alunos_modelos_treino amt ON mt.id = amt.modelo_treino_id
-            WHERE amt.aluno_id = $1
-            ORDER BY mt.nome ASC
-        `;
-        const result = await db.query(query, [alunoId]);
-        
-        res.status(200).json(result.rows);
-    } catch (error) {
-        console.error('Erro ao buscar modelos de treino do aluno:', error);
-        res.status(500).json({ error: 'Erro ao buscar modelos de treino do aluno.' });
+    // Não precisa mais verificar se é o próprio aluno acessando seus dados
+    // O acesso agora é aberto
+    
+    // Verificar se o aluno existe
+    const alunoResult = await db.query('SELECT id FROM alunos WHERE id = $1', [alunoId]);
+    if (alunoResult.rows.length === 0) {
+        throw new ApiError(
+            ErrorTypes.NOT_FOUND.code,
+            'Aluno não encontrado.'
+        );
     }
-};
+    
+    // Buscar os modelos de treino atribuídos ao aluno
+    const query = `
+        SELECT mt.id, mt.nome, mt.descricao 
+        FROM modelos_treino mt
+        JOIN alunos_modelos_treino amt ON mt.id = amt.modelo_treino_id
+        WHERE amt.aluno_id = $1
+        ORDER BY mt.nome ASC
+    `;
+    const result = await db.query(query, [alunoId]);
+    
+    res.status(200).json({
+        success: true,
+        data: result.rows
+    });
+});
 
 // Atribuir um modelo de treino a um aluno
 const assignModeloTreinoToAluno = async (req, res) => {

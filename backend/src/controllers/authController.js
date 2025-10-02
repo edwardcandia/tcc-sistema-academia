@@ -2,6 +2,7 @@
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { generateToken, JWT_CONFIG } = require('../middleware/auth');
 
 // Função para verificar a validade de um token
 const verifyToken = (req, res) => {
@@ -12,13 +13,13 @@ const verifyToken = (req, res) => {
     }
 
     // O token vem no formato "Bearer [token]"
-    const token = authHeader.split(' ')[1];
+    const token = authHeader.split(' ')[1] || authHeader;
     if (!token) {
       return res.json({ valid: false, message: 'Formato de token inválido.' });
     }
 
     // Verificar o token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'seu_segredo_jwt');
+    const decoded = jwt.verify(token, JWT_CONFIG.secret);
     
     // Token é válido
     return res.json({ 
@@ -58,6 +59,8 @@ const login = async (req, res) => {
     }
 
     try {
+        console.log('Tentativa de login para:', email);
+        
         // 1. Tenta encontrar o email na tabela de USUÁRIOS (admin/atendente)
         let result = await db.query('SELECT * FROM usuarios WHERE email = $1', [email]);
 
@@ -66,38 +69,26 @@ const login = async (req, res) => {
             const user = result.rows[0];
             const isMatch = await bcrypt.compare(senha, user.senha_hash);
             if (!isMatch) {
+                console.log('Senha incorreta para usuário:', email);
                 return res.status(401).json({ error: 'Credenciais inválidas.' });
             }
 
-            const token = jwt.sign({ id: user.id, cargo: user.cargo, tipo: 'user' }, process.env.JWT_SECRET, { expiresIn: '8h' });
+            const tokenPayload = { id: user.id, cargo: user.cargo, tipo: 'user' };
+            console.log('Gerando token para usuário com payload:', tokenPayload);
+            
+            const token = generateToken(tokenPayload);
+            console.log('Token gerado para usuário:', token.substring(0, 20) + '...');
+            
             return res.json({
                 token,
                 user: { id: user.id, nome: user.nome, email: user.email, cargo: user.cargo },
             });
         }
 
-        // 2. Se não encontrou, tenta encontrar na tabela de ALUNOS
-        result = await db.query('SELECT * FROM alunos WHERE email = $1', [email]);
-
-        if (result.rows.length > 0) {
-            // Encontrou um aluno
-            const aluno = result.rows[0];
-            if (!aluno.senha_hash) {
-                return res.status(401).json({ error: 'Senha de aluno ainda não definida.' });
-            }
-            const isMatch = await bcrypt.compare(senha, aluno.senha_hash);
-            if (!isMatch) {
-                return res.status(401).json({ error: 'Credenciais inválidas.' });
-            }
-
-            const token = jwt.sign({ id: aluno.id, tipo: 'aluno' }, process.env.JWT_SECRET, { expiresIn: '8h' });
-            return res.json({
-                token,
-                aluno: { id: aluno.id, nome: aluno.nome_completo, email: aluno.email },
-            });
-        }
+                // Student login functionality removed
 
         // 3. Se não encontrou em nenhuma tabela, retorna erro
+        console.log('Usuário não encontrado:', email);
         return res.status(404).json({ error: 'Credenciais inválidas.' });
 
     } catch (error) {

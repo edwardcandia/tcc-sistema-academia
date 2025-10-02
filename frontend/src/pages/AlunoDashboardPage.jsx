@@ -7,14 +7,17 @@ import {
   Divider, Button, CircularProgress, Card, CardContent, CardActions,
   Grid, Chip, Avatar, IconButton, LinearProgress, Tabs, Tab, Alert,
   Dialog, DialogTitle, DialogContent, DialogActions, TextField,
-  MenuItem, Select, FormControl, InputLabel, Badge, Tooltip
+  MenuItem, Select, FormControl, InputLabel, Badge, Tooltip, ListItemIcon
 } from '@mui/material';
 import { 
   FitnessCenter, CalendarMonth, CheckCircle, AccessTime, 
   Assignment, TrendingUp, Person, Payment, Notifications, 
   ArrowForward, Add, Edit, EmojiEvents, Favorite, DirectionsRun,
-  Home, Info
+  Home, Info, Feedback as FeedbackIcon
 } from '@mui/icons-material';
+import AlunoProgressoCharts from '../components/AlunoProgressoCharts';
+import AlunoFeedbackForm from '../components/AlunoFeedbackForm';
+import TokenTester from '../components/TokenTester';
 import { useNavigate, Link } from 'react-router-dom';
 
 function AlunoDashboardPage() {
@@ -140,19 +143,73 @@ function AlunoDashboardPage() {
     // Carregar treinos do aluno
     useEffect(() => {
         const fetchTreinos = async () => {
-            if (!authHeader || !aluno) return;
+            if (!aluno) {
+                console.log('Não foi possível buscar treinos: aluno não disponível');
+                return;
+            }
+            
             try {
                 setLoadingTreinos(true);
-                const response = await axios.get(`http://localhost:3001/api/alunos/${aluno.id}/modelos-treino`, authHeader());
-                setMeusTreinos(response.data);
+                
+                // Verifica se o token está presente no localStorage antes de fazer a requisição
+                const storedToken = localStorage.getItem('token');
+                if (!storedToken) {
+                    console.error('Token não encontrado no localStorage');
+                    alert('Sua sessão expirou. Por favor, faça login novamente.');
+                    logout();
+                    return;
+                }
+                
+                console.log('ID do aluno:', aluno.id);
+                console.log('Token usado:', storedToken.substring(0, 15) + '...');
+                
+                // Endpoint para buscar os modelos de treino do aluno
+                const url = `http://localhost:3001/api/alunos/${aluno.id}/modelos-treino`;
+                console.log('Fazendo requisição para:', url);
+                
+                // Usa o token diretamente para evitar problemas com o authHeader
+                const response = await axios.get(
+                    url, 
+                    { headers: { Authorization: `Bearer ${storedToken}` } }
+                );
+                
+                console.log('Resposta da API de treinos:', response.data);
+                
+                if (Array.isArray(response.data)) {
+                    setMeusTreinos(response.data);
+                } else {
+                    console.error('Resposta da API não é um array:', response.data);
+                    setMeusTreinos([]);
+                }
             } catch (error) {
                 console.error("Erro ao buscar treinos do aluno:", error);
+                
+                if (error.response) {
+                    console.error("Status do erro:", error.response.status);
+                    console.error("Detalhes do erro:", error.response.data);
+                    
+                    // Se o erro for 401 ou 403, pode ser um problema de autenticação
+                    if (error.response.status === 401 || error.response.status === 403) {
+                        console.warn("Possível problema de autenticação. Token inválido ou expirado.");
+                        alert('Sessão expirada ou inválida. Por favor, faça login novamente.');
+                        logout();
+                    }
+                    
+                    // Se for erro 500, mostra uma mensagem mais detalhada
+                    else if (error.response.status === 500) {
+                        console.error("Erro interno do servidor:", error.response.data);
+                        alert('Erro ao buscar seus treinos. Por favor, tente novamente mais tarde.');
+                    }
+                } else {
+                    console.error("Erro de rede ou outro erro:", error.message);
+                    alert('Erro de conexão. Por favor, verifique sua internet e tente novamente.');
+                }
             } finally {
                 setLoadingTreinos(false);
             }
         };
         fetchTreinos();
-    }, [authHeader, aluno]);
+    }, [aluno, logout]);
     
     // Carregar histórico de treinos realizados
     useEffect(() => {
@@ -252,10 +309,13 @@ function AlunoDashboardPage() {
             case 0: // Dashboard principal
                 return (
                     <>
-                        {/* Estatísticas Rápidas */}
+                        {/* Links Rápidos */}
                         <Grid container spacing={2} sx={{ mb: 3 }}>
                             <Grid item xs={12} sm={6} md={3}>
-                                <Card sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', height: '100%' }}>
+                                <Card 
+                                  sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', height: '100%', cursor: 'pointer' }}
+                                  onClick={() => navigate('/aluno/treinos')}
+                                >
                                     <CardContent>
                                         <FitnessCenter />
                                         <Typography variant="h6" gutterBottom>Treinos</Typography>
@@ -264,16 +324,7 @@ function AlunoDashboardPage() {
                                     </CardContent>
                                 </Card>
                             </Grid>
-                            <Grid item xs={12} sm={6} md={3}>
-                                <Card sx={{ bgcolor: '#e3f2fd', color: '#1565c0', height: '100%' }}>
-                                    <CardContent>
-                                        <CheckCircle />
-                                        <Typography variant="h6" gutterBottom>Realizados</Typography>
-                                        <Typography variant="h4">{progresso.length}</Typography>
-                                        <Typography variant="body2">treinos completados</Typography>
-                                    </CardContent>
-                                </Card>
-                            </Grid>
+
                             <Grid item xs={12} sm={6} md={3}>
                                 <Card sx={{ bgcolor: '#fff3e0', color: '#e65100', height: '100%' }}>
                                     <CardContent>
@@ -460,6 +511,14 @@ function AlunoDashboardPage() {
                                 Registrar Novo Treino
                             </Button>
                         </Paper>
+                        
+                        {/* Componente de teste de token */}
+                        <Box sx={{ mt: 4, mb: 2 }}>
+                            <Typography variant="h6" sx={{ mb: 1 }}>
+                                Teste de Autenticação
+                            </Typography>
+                            <TokenTester />
+                        </Box>
                     </>
                 );
                 
@@ -525,65 +584,73 @@ function AlunoDashboardPage() {
                 
             case 2: // Meu Progresso
                 return (
-                    <Paper sx={{ p: 2 }}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6">Meu Progresso</Typography>
-                            <Button
-                                variant="contained"
-                                startIcon={<Add />}
-                                onClick={() => handleAbrirDialogo()}
-                            >
-                                Registrar Treino
-                            </Button>
-                        </Box>
-                        <Divider sx={{ mb: 2 }} />
-                        {progresso.length > 0 ? (
-                            <List>
-                                {progresso.map(p => (
-                                    <ListItem key={p.id} sx={{ bgcolor: '#f5f5f5', mb: 1, borderRadius: 1 }}>
-                                        <ListItemIcon>
-                                            <CheckCircle color="success" />
-                                        </ListItemIcon>
-                                        <ListItemText 
-                                            primary={
-                                                <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                    <Typography variant="subtitle1">{p.treino_nome}</Typography>
-                                                    <Chip
-                                                        size="small"
-                                                        label={`${p.data}`}
-                                                        color="primary"
-                                                        variant="outlined"
-                                                    />
-                                                </Box>
-                                            }
-                                            secondary={
-                                                <>
-                                                    <Typography variant="body2">Duração: {p.duracao} minutos</Typography>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
-                                                        <Typography variant="body2" sx={{ mr: 1 }}>Avaliação:</Typography>
-                                                        {Array.from({ length: 5 }).map((_, i) => (
-                                                            <EmojiEvents 
-                                                                key={i}
-                                                                fontSize="small"
-                                                                color={i < p.avaliacao ? "warning" : "disabled"}
-                                                            />
-                                                        ))}
+                    <>
+                        <Paper sx={{ p: 2, mb: 3 }}>
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                                <Typography variant="h6">Meu Progresso</Typography>
+                                <Button
+                                    variant="contained"
+                                    startIcon={<Add />}
+                                    onClick={() => handleAbrirDialogo()}
+                                >
+                                    Registrar Treino
+                                </Button>
+                            </Box>
+                            <Divider sx={{ mb: 2 }} />
+                            {progresso.length > 0 ? (
+                                <List>
+                                    {progresso.slice(0, 5).map(p => (
+                                        <ListItem key={p.id} sx={{ bgcolor: '#f5f5f5', mb: 1, borderRadius: 1 }}>
+                                            <ListItemIcon>
+                                                <CheckCircle color="success" />
+                                            </ListItemIcon>
+                                            <ListItemText 
+                                                primary={
+                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                        <Typography variant="subtitle1">{p.treino_nome}</Typography>
+                                                        <Chip
+                                                            size="small"
+                                                            label={`${p.data_realizacao}`}
+                                                            color="primary"
+                                                            variant="outlined"
+                                                        />
                                                     </Box>
-                                                </>
-                                            }
-                                        />
-                                    </ListItem>
-                                ))}
-                            </List>
-                        ) : (
-                            <Alert severity="info">
-                                Você ainda não registrou nenhum treino. Comece a registrar para acompanhar seu progresso!
-                            </Alert>
-                        )}
-                    </Paper>
+                                                }
+                                                secondary={
+                                                    <>
+                                                        <Typography variant="body2">Duração: {p.duracao} minutos</Typography>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                                                            <Typography variant="body2" sx={{ mr: 1 }}>Avaliação:</Typography>
+                                                            {Array.from({ length: 5 }).map((_, i) => (
+                                                                <EmojiEvents 
+                                                                    key={i}
+                                                                    fontSize="small"
+                                                                    color={i < p.avaliacao ? "warning" : "disabled"}
+                                                                />
+                                                            ))}
+                                                        </Box>
+                                                    </>
+                                                }
+                                            />
+                                        </ListItem>
+                                    ))}
+                                </List>
+                            ) : (
+                                <Alert severity="info">
+                                    Você ainda não registrou nenhum treino. Comece a registrar para acompanhar seu progresso!
+                                </Alert>
+                            )}
+                        </Paper>
+                        
+                        {/* Gráficos de Progresso do Aluno */}
+                        <AlunoProgressoCharts />
+                    </>
                 );
                 
-            case 3: // Meu Perfil
+            case 3: // Feedback
+                return <AlunoFeedbackForm />;
+                
+            case 4: // Meu Perfil
                 return (
                     <>
                         <Paper sx={{ p: 3, mb: 3 }}>
@@ -780,6 +847,7 @@ function AlunoDashboardPage() {
                     <Tab icon={<Home />} label="Dashboard" />
                     <Tab icon={<FitnessCenter />} label="Meus Treinos" />
                     <Tab icon={<TrendingUp />} label="Meu Progresso" />
+                    <Tab icon={<FeedbackIcon />} label="Feedback" />
                     <Tab icon={<Person />} label="Meu Perfil" />
                 </Tabs>
                 
