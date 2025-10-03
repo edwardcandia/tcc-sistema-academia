@@ -28,12 +28,14 @@ ChartJS.register(
 );
 
 function DashboardCharts() {
-  const { authHeader } = useAuth();
+  const { authHeader, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusAlunos, setStatusAlunos] = useState([]);
   const [distribuicaoPlanos, setDistribuicaoPlanos] = useState([]);
   const [historicoPagamentos, setHistoricoPagamentos] = useState({ meses: [], valores: [] });
+  
+  const isAdmin = user && user.cargo === 'administrador';
 
   useEffect(() => {
     const fetchChartData = async () => {
@@ -202,47 +204,49 @@ function DashboardCharts() {
           </Paper>
         </Grid>
         
-        {/* Receita mensal */}
-        <Grid item xs={12}>
-          <Paper sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <TrendingUp color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6">Receita dos Últimos 6 Meses</Typography>
-            </Box>
-            <Divider sx={{ mb: 2 }} />
-            <Box sx={{ height: 300 }}>
-              <Bar 
-                data={dadosPagamentos}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback: function(value) {
-                          return 'R$ ' + value.toLocaleString('pt-BR');
+        {/* Receita mensal - apenas para administradores */}
+        {isAdmin && (
+          <Grid item xs={12}>
+            <Paper sx={{ p: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <TrendingUp color="primary" sx={{ mr: 1 }} />
+                <Typography variant="h6">Receita dos Últimos 6 Meses</Typography>
+              </Box>
+              <Divider sx={{ mb: 2 }} />
+              <Box sx={{ height: 300 }}>
+                <Bar 
+                  data={dadosPagamentos}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                      y: {
+                        beginAtZero: true,
+                        ticks: {
+                          callback: function(value) {
+                            return 'R$ ' + value.toLocaleString('pt-BR');
+                          }
+                        }
+                      }
+                    },
+                    plugins: {
+                      tooltip: {
+                        callbacks: {
+                          label: function(context) {
+                            return 'R$ ' + context.parsed.y.toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                              maximumFractionDigits: 2
+                            });
+                          }
                         }
                       }
                     }
-                  },
-                  plugins: {
-                    tooltip: {
-                      callbacks: {
-                        label: function(context) {
-                          return 'R$ ' + context.parsed.y.toLocaleString('pt-BR', {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2
-                          });
-                        }
-                      }
-                    }
-                  }
-                }}
-              />
-            </Box>
-          </Paper>
-        </Grid>
+                  }}
+                />
+              </Box>
+            </Paper>
+          </Grid>
+        )}
       </Grid>
     </Box>
   );

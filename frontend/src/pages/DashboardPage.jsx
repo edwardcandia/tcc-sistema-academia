@@ -126,7 +126,7 @@ function DashboardPage() {
 
           {/* Cards de estatísticas */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={user && user.cargo === 'administrador' ? 3 : 4}>
               <Card sx={{ bgcolor: "#e3f2fd", color: "#1565c0", height: "100%" }}>
                 {renderCardContent("Total de Alunos", estatisticas.totalAlunos, loading)}
                 <CardContent sx={{ pt: 0, pb: 1 }}>
@@ -142,7 +142,7 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} sm={6} md={user && user.cargo === 'administrador' ? 3 : 4}>
               <Card sx={{ bgcolor: "#e8f5e9", color: "#2e7d32", height: "100%" }}>
                 {renderCardContent("Alunos Ativos", estatisticas.alunosAtivos, loading)}
                 <CardContent sx={{ pt: 0, pb: 1 }}>
@@ -162,17 +162,20 @@ function DashboardPage() {
                 </CardContent>
               </Card>
             </Grid>
-            <Grid item xs={12} sm={6} md={3}>
-              <Card sx={{ bgcolor: "#fff3e0", color: "#e65100", height: "100%" }}>
-                {renderCardContent("Receita do Mês", estatisticas.receitaMes, loading, "currency")}
-                <CardContent sx={{ pt: 0, pb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    {loading ? <Skeleton width="60%" /> : "Pagamentos recebidos no mês atual"}
-                  </Typography>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} sm={6} md={3}>
+            {/* Receita do Mês - apenas para administradores */}
+            {user && user.cargo === 'administrador' && (
+              <Grid item xs={12} sm={6} md={3}>
+                <Card sx={{ bgcolor: "#fff3e0", color: "#e65100", height: "100%" }}>
+                  {renderCardContent("Receita do Mês", estatisticas.receitaMes, loading, "currency")}
+                  <CardContent sx={{ pt: 0, pb: 1 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      {loading ? <Skeleton width="60%" /> : "Pagamentos recebidos no mês atual"}
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            )}
+            <Grid item xs={12} sm={6} md={user && user.cargo === 'administrador' ? 3 : 4}>
               <Card sx={{ bgcolor: "#ffebee", color: "#c62828", height: "100%" }}>
                 {renderCardContent(
                   "Pagamentos Pendentes",
@@ -197,6 +200,7 @@ function DashboardPage() {
               Acesso Rápido
             </Typography>
             <Grid container spacing={2} sx={{ mb: 4 }}>
+              {/* Todos os usuários podem acessar Alunos */}
               <Grid item xs={6} sm={3}>
                 <Button
                   component={Link}
@@ -217,66 +221,78 @@ function DashboardPage() {
                   Alunos
                 </Button>
               </Grid>
-              <Grid item xs={6} sm={3}>
-                <Button
-                  component={Link}
-                  to="/planos"
-                  variant="outlined"
-                  startIcon={<DirectionsRun />}
-                  fullWidth
-                  sx={{
-                    height: "100%",
-                    p: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Box sx={{ mb: 1 }}>
-                    <Paid sx={{ fontSize: 32 }} />
-                  </Box>
-                  Planos
-                </Button>
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <Button
-                  component={Link}
-                  to="/exercicios"
-                  variant="outlined"
-                  startIcon={<FitnessCenter />}
-                  fullWidth
-                  sx={{
-                    height: "100%",
-                    p: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Box sx={{ mb: 1 }}>
-                    <DirectionsRun sx={{ fontSize: 32 }} />
-                  </Box>
-                  Exercícios
-                </Button>
-              </Grid>
-              <Grid item xs={6} sm={3}>
-                <Button
-                  component={Link}
-                  to="/modelos-treino"
-                  variant="outlined"
-                  startIcon={<CalendarToday />}
-                  fullWidth
-                  sx={{
-                    height: "100%",
-                    p: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Box sx={{ mb: 1 }}>
-                    <CalendarToday sx={{ fontSize: 32 }} />
-                  </Box>
-                  Treinos
-                </Button>
-              </Grid>
+              
+              {/* Somente administradores podem acessar Planos */}
+              {user && user.cargo === 'administrador' && (
+                <Grid item xs={6} sm={3}>
+                  <Button
+                    component={Link}
+                    to="/planos"
+                    variant="outlined"
+                    startIcon={<DirectionsRun />}
+                    fullWidth
+                    sx={{
+                      height: "100%",
+                      p: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <Box sx={{ mb: 1 }}>
+                      <Paid sx={{ fontSize: 32 }} />
+                    </Box>
+                    Planos
+                  </Button>
+                </Grid>
+              )}
+              
+              {/* Somente administradores e instrutores podem acessar Exercícios */}
+              {user && (user.cargo === 'administrador' || user.cargo === 'instrutor') && (
+                <Grid item xs={6} sm={3}>
+                  <Button
+                    component={Link}
+                    to="/exercicios"
+                    variant="outlined"
+                    startIcon={<FitnessCenter />}
+                    fullWidth
+                    sx={{
+                      height: "100%",
+                      p: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <Box sx={{ mb: 1 }}>
+                      <DirectionsRun sx={{ fontSize: 32 }} />
+                    </Box>
+                    Exercícios
+                  </Button>
+                </Grid>
+              )}
+              
+              {/* Somente administradores podem acessar Treinos */}
+              {user && user.cargo === 'administrador' && (
+                <Grid item xs={6} sm={3}>
+                  <Button
+                    component={Link}
+                    to="/modelos-treino"
+                    variant="outlined"
+                    startIcon={<CalendarToday />}
+                    fullWidth
+                    sx={{
+                      height: "100%",
+                      p: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <Box sx={{ mb: 1 }}>
+                      <CalendarToday sx={{ fontSize: 32 }} />
+                    </Box>
+                    Treinos
+                  </Button>
+                </Grid>
+              )}
             </Grid>
           </Box>
 
