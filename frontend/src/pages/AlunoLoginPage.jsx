@@ -26,9 +26,19 @@ function AlunoLoginPage() {
   return (
     <Container component="main" maxWidth="xs">
       <Paper elevation={6} sx={{ marginTop: 8, padding: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography component="h1" variant="h5">
-          Portal do Aluno - Login
-        </Typography>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 3 }}>
+          <img 
+            src="/assets/logos/plankgym/logo-main.png" 
+            alt="PlankGYM Logo" 
+            style={{ height: "120px", marginBottom: "16px" }} 
+          />
+          <Typography component="h1" variant="h4" sx={{ fontWeight: "bold", color: "#2E7D32" }}>
+            PlankGYM
+          </Typography>
+          <Typography component="p" variant="body1" sx={{ mt: 1, textAlign: 'center' }}>
+            Portal do Aluno - Login
+          </Typography>
+        </Box>
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
           <TextField margin="normal" required fullWidth id="email" label="Seu Email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} />
           <TextField margin="normal" required fullWidth name="senha" label="Sua Senha" type="password" id="password" value={senha} onChange={(e) => setSenha(e.target.value)} />

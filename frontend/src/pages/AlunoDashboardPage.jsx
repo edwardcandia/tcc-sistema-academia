@@ -822,13 +822,23 @@ function AlunoDashboardPage() {
         <Container maxWidth="lg">
             <Box sx={{ my: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-                    <Box>
-                        <Typography variant="h4" component="h1" gutterBottom>
-                            Olá, {meusDados?.nome_completo?.split(' ')[0] || aluno?.nome?.split(' ')[0] || 'Aluno'}!
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                            Bem-vindo ao seu painel de controle. Acompanhe seus treinos e evolução.
-                        </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <img 
+                            src="/assets/logos/plankgym/logo-main.png" 
+                            alt="PlankGYM Logo" 
+                            style={{ height: "60px", marginRight: "16px" }} 
+                        />
+                        <Box>
+                            <Typography variant="h4" component="h1" sx={{ fontWeight: "bold", color: "#2E7D32" }} gutterBottom>
+                                PlankGYM
+                            </Typography>
+                            <Typography variant="h5" component="h2" gutterBottom>
+                                Olá, {meusDados?.nome_completo?.split(' ')[0] || aluno?.nome?.split(' ')[0] || 'Aluno'}!
+                            </Typography>
+                            <Typography variant="body1" color="text.secondary">
+                                Bem-vindo ao seu painel de controle. Acompanhe seus treinos e evolução.
+                            </Typography>
+                        </Box>
                     </Box>
                     <Badge badgeContent={notificacoes.length} color="error">
                         <Button variant="outlined" onClick={handleLogout} endIcon={<ArrowForward />}>

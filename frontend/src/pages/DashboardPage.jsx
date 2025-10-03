@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import PlankGymLogo from "../components/common/PlankGymLogo";
 import {
   CssBaseline,
   Container,
@@ -116,9 +117,7 @@ function DashboardPage() {
       <Container maxWidth="lg">
         <Box sx={{ my: 4 }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-            <Typography variant="h4" component="h1">
-              S.G.A: Sistema de Gestão
-            </Typography>
+            <PlankGymLogo size="medium" />
             <Button variant="outlined" onClick={handleLogout}>
               Sair
             </Button>
@@ -127,7 +126,7 @@ function DashboardPage() {
           {/* Cards de estatísticas */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={12} sm={6} md={user && user.cargo === 'administrador' ? 3 : 4}>
-              <Card sx={{ bgcolor: "#e3f2fd", color: "#1565c0", height: "100%" }}>
+              <Card sx={{ bgcolor: "#e8f5e9", color: "#2E7D32", height: "100%" }}>
                 {renderCardContent("Total de Alunos", estatisticas.totalAlunos, loading)}
                 <CardContent sx={{ pt: 0, pb: 1 }}>
                   <Button

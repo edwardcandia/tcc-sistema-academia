@@ -37,9 +37,16 @@ function Layout() {
       <CssBaseline />
       <AppBar position="fixed" sx={{ zIndex: (theme) => theme.zIndex.drawer + 1 }}>
         <Toolbar>
-          <Typography variant="h6" noWrap component="div">
-            PlankGYM
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <img 
+              src="/assets/logos/plankgym/logo-main.png" 
+              alt="PlankGYM Logo" 
+              style={{ height: "40px", marginRight: "16px" }} 
+            />
+            <Typography variant="h6" noWrap component="div" sx={{ fontWeight: "bold" }}>
+              PlankGYM
+            </Typography>
+          </Box>
         </Toolbar>
       </AppBar>
       <Drawer
