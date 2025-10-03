@@ -84,12 +84,13 @@ function DashboardCharts() {
   };
 
   // Preparar dados para o gráfico de distribuição de planos
+  // Garantir que todos os valores são inteiros
   const planosData = {
     labels: distribuicaoPlanos.map(p => p.nome),
     datasets: [
       {
         label: 'Número de Alunos',
-        data: distribuicaoPlanos.map(p => parseInt(p.total_alunos, 10)),
+        data: distribuicaoPlanos.map(p => Math.round(parseInt(p.total_alunos, 10))), // Arredondar para garantir valores inteiros
         backgroundColor: [
           '#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#d35400'
         ]
@@ -175,7 +176,24 @@ function DashboardCharts() {
                   maintainAspectRatio: false,
                   scales: {
                     y: {
-                      beginAtZero: true
+                      beginAtZero: true,
+                      ticks: {
+                        precision: 0, // Force integer ticks with no decimals
+                        stepSize: 1,  // Force step size to 1
+                        callback: function(value) {
+                          return Math.floor(value); // Ensure only integers are displayed
+                        }
+                      }
+                    }
+                  },
+                  plugins: {
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          // Force integer values in tooltips
+                          return context.dataset.label + ': ' + Math.round(context.raw);
+                        }
+                      }
                     }
                   }
                 }}

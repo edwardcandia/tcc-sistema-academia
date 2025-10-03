@@ -8,11 +8,13 @@ PlankGYM é um sistema de gestão completo para academias, com foco na administr
 
 ### Remoção da Funcionalidade de Aulas e Atividades
 
-Para simplificar o sistema e focar nas funcionalidades essenciais, a opção de aulas e atividades foi removida. Isso inclui:
+Para simplificar o sistema e focar nas funcionalidades essenciais, a opção de aulas e atividades foi completamente removida. Isso inclui:
 
 - Remoção das rotas relacionadas a aulas
 - Remoção dos controllers de aulas
-- Remoção das referências no arquivo principal (index.js)
+- Remoção de componentes frontend e páginas de aulas
+- Remoção das tabelas de banco de dados relacionadas
+- Limpeza completa de todos arquivos e referências a essa funcionalidade
 
 ### Aprimoramento dos Relatórios
 

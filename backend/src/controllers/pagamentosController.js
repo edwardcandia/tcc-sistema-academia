@@ -7,12 +7,36 @@ const registrarPagamento = async (req, res) => {
         return res.status(400).json({ error: 'Valor e data do pagamento são obrigatórios.' });
     }
     try {
-        await db.query('INSERT INTO pagamentos (aluno_id, data_pagamento, valor, status, data_vencimento) VALUES ($1, $2, $3, $4, NOW())', [id, data_pagamento, valor_pago, 'pago']);
+        // Iniciar uma transação para garantir a consistência dos dados
+        await db.query('BEGIN');
+        
+        // Inserir o novo pagamento
+        await db.query('INSERT INTO pagamentos (aluno_id, data_pagamento, valor, status, data_vencimento) VALUES ($1, $2, $3, $4, NOW())', 
+                      [id, data_pagamento, valor_pago, 'pago']);
+        
+        // Atualizar a data de vencimento do aluno
         const proximoVencimento = new Date(data_pagamento);
         proximoVencimento.setDate(proximoVencimento.getDate() + 30);
-        await db.query('UPDATE alunos SET proximo_vencimento = $1 WHERE id = $2', [proximoVencimento, id]);
-        res.status(201).json({ message: 'Pagamento registrado com sucesso.' });
+        await db.query('UPDATE alunos SET proximo_vencimento = $1 WHERE id = $2', 
+                      [proximoVencimento, id]);
+        
+        // Confirmar a transação
+        await db.query('COMMIT');
+        
+        console.log(`Pagamento registrado para aluno ID ${id}: R$ ${valor_pago}`);
+        res.status(201).json({ 
+            message: 'Pagamento registrado com sucesso.',
+            success: true,
+            pagamento: {
+                valor: valor_pago,
+                data: data_pagamento,
+                aluno_id: id
+            }
+        });
     } catch (error) {
+        // Em caso de erro, reverter a transação
+        await db.query('ROLLBACK');
+        console.error('Erro ao registrar pagamento:', error);
         res.status(500).json({ error: 'Erro ao registrar o pagamento.' });
     }
 };

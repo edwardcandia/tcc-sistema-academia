@@ -20,7 +20,6 @@ import Login from './pages/Login';
 import DashboardPage from './pages/DashboardPage';
 import AlunosPage from './pages/AlunosPage';
 import PlanosPage from './pages/PlanosPage';
-import RelatoriosPage from './pages/RelatoriosPage';
 import ExerciciosPage from './pages/ExerciciosPage';
 import AlunoLoginPage from './pages/AlunoLoginPage';
 import AlunoDashboardPage from './pages/AlunoDashboardPage';
@@ -81,11 +80,7 @@ function App() {
               <PlanosPage />
             </PrivateRoute>
           } />
-          <Route path="relatorios" element={
-            <PrivateRoute roles={['administrador']}>
-              <RelatoriosPage />
-            </PrivateRoute>
-          } />
+
           <Route path="exercicios" element={
             <PrivateRoute roles={['administrador']}>
               <ExerciciosPage />

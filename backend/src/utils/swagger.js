@@ -253,10 +253,6 @@ const swaggerDefinition = {
       name: 'Planos',
       description: 'Gerenciamento de planos',
     },
-    {
-      name: 'Aulas',
-      description: 'Gerenciamento de aulas',
-    },
   ],
 };
 

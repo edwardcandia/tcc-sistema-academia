@@ -10,7 +10,6 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import { useAuth } from '../context/AuthContext';
 
 const drawerWidth = 240;
@@ -31,7 +30,6 @@ function Layout() {
     { text: 'Exercícios', path: '/exercicios', icon: <FitnessCenterIcon />, roles: ['administrador'] },
     { text: 'Modelos de Treino', path: '/modelos-treino', icon: <ViewListIcon />, roles: ['administrador'] },
     { text: 'Notificações', path: '/notificacoes-automaticas', icon: <NotificationsActiveIcon />, roles: ['administrador'] },
-    { text: 'Relatórios', path: '/relatorios', icon: <AssessmentIcon />, roles: ['administrador'] },
   ];
 
   return (

@@ -55,7 +55,6 @@ const alunosRoutes = require('./src/routes/alunosRoutes');
 const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const pagamentosRoutes = require('./src/routes/pagamentosRoutes');
 const authRoutes = require('./src/routes/authRoutes');
-const relatoriosRoutes = require('./src/routes/relatoriosRoutes');
 // Portal routes removido (acesso de alunos)
 const exerciciosRoutes = require('./src/routes/exerciciosRoutes');
 const modelosTreinoRoutes = require('./src/routes/modelosTreinoRoutes');
@@ -71,7 +70,6 @@ app.use(`${API_PREFIX}`, planosRoutes);
 app.use(`${API_PREFIX}`, alunosRoutes);
 app.use(`${API_PREFIX}`, dashboardRoutes);
 app.use(`${API_PREFIX}`, pagamentosRoutes);
-app.use(`${API_PREFIX}`, relatoriosRoutes);
 // Portal routes removido (acesso de alunos)
 app.use(`${API_PREFIX}`, exerciciosRoutes);
 app.use(`${API_PREFIX}`, modelosTreinoRoutes);

@@ -60,20 +60,33 @@ const getPagamentosVencendo = async (req, res) => {
 const getEstatisticas = async (req, res) => {
   try {
     // Buscar todas as métricas necessárias para o dashboard em uma única requisição
-    const [totalAlunosRes, alunosAtivosRes, receitaMesRes, pagamentosPendentesRes] = await Promise.all([
+    const [totalAlunosRes, alunosAtivosRes, pagamentosPendentesRes, receitaMesRes] = await Promise.all([
       db.query('SELECT COUNT(*) FROM alunos'),
       db.query("SELECT COUNT(*) FROM alunos WHERE status = 'ativo'"),
-      db.query(`SELECT SUM(p.valor) as receita_total FROM alunos a JOIN planos p ON a.plano_id = p.id WHERE a.status = 'ativo'`),
-      db.query(`SELECT COUNT(*) FROM alunos WHERE status = 'ativo' AND proximo_vencimento < NOW()`)
+      db.query(`SELECT COUNT(*) FROM alunos WHERE status = 'ativo' AND proximo_vencimento < NOW()`),
+      // Nova consulta: calcula o total de pagamentos recebidos no mês atual
+      db.query(`
+        SELECT COALESCE(SUM(valor), 0) as receita_total 
+        FROM pagamentos 
+        WHERE EXTRACT(MONTH FROM data_pagamento) = EXTRACT(MONTH FROM CURRENT_DATE)
+        AND EXTRACT(YEAR FROM data_pagamento) = EXTRACT(YEAR FROM CURRENT_DATE)
+      `)
     ]);
 
+    // Usar o valor real dos pagamentos do mês atual
+    let receitaMesValue = 0;
+    if (receitaMesRes.rows[0] && receitaMesRes.rows[0].receita_total !== null) {
+      receitaMesValue = parseFloat(receitaMesRes.rows[0].receita_total);
+    }
+    
     const estatisticas = {
       totalAlunos: parseInt(totalAlunosRes.rows[0].count, 10),
       alunosAtivos: parseInt(alunosAtivosRes.rows[0].count, 10),
-      receitaMes: parseFloat(receitaMesRes.rows[0].receita_total || 0),
+      receitaMes: receitaMesValue.toFixed(2),
       pagamentosPendentes: parseInt(pagamentosPendentesRes.rows[0].count, 10)
     };
 
+    console.log('Estatísticas do dashboard:', estatisticas);
     res.status(200).json(estatisticas);
   } catch (error) {
     console.error("Erro ao buscar estatísticas:", error);
