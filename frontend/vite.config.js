@@ -12,5 +12,23 @@ export default defineConfig({
         simple: resolve(__dirname, 'simple.html')
       }
     }
+  },
+  server: {
+    // Força o HMR a recarregar completamente em caso de erro
+    hmr: {
+      overlay: true
+    },
+    // Aumenta o timeout para evitar erros 504
+    fs: {
+      strict: false,
+    },
+    // Aumenta a memória disponível para o processo
+    watch: {
+      usePolling: true
+    }
+  },
+  optimizeDeps: {
+    // Força a reotimização das dependências em caso de problemas
+    force: true
   }
 })

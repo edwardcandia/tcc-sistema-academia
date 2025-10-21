@@ -6,6 +6,16 @@ PlankGYM é um sistema de gestão completo para academias, com foco na administr
 
 ## Alterações Recentes
 
+### Migração para TypeScript
+
+Todo o código-fonte do projeto foi migrado de JavaScript para TypeScript, trazendo os seguintes benefícios:
+
+- Tipagem estática para maior segurança e confiabilidade do código
+- Melhor suporte para autocompletar e documentação inline
+- Refatorações mais seguras e detecção de erros em tempo de compilação
+- Interfaces e tipos bem definidos para modelos de dados
+- Melhor experiência de desenvolvimento com IntelliSense aprimorado
+
 ### Remoção da Funcionalidade de Aulas e Atividades
 
 Para simplificar o sistema e focar nas funcionalidades essenciais, a opção de aulas e atividades foi completamente removida. Isso inclui:
@@ -37,13 +47,14 @@ O sistema foi renomeado para "PlankGYM" em homenagem ao Plankton do desenho Bob 
 ## Tecnologias Utilizadas
 
 ### Backend
-- Node.js
+- Node.js com TypeScript
 - Express.js
 - PostgreSQL
 - JWT para autenticação
+- Swagger para documentação da API
 
 ### Frontend
-- React
+- React com TypeScript
 - Material UI
 - Axios para requisições HTTP
 - Vite para build e desenvolvimento
@@ -63,7 +74,9 @@ O sistema foi renomeado para "PlankGYM" em homenagem ao Plankton do desenho Bob 
 ```
 cd backend
 npm install
-npm run dev
+npm run dev      # Para desenvolvimento com hot-reload
+npm run build    # Para compilar TypeScript
+npm start        # Para executar versão compilada
 ```
 
 **Frontend:**
@@ -78,14 +91,16 @@ npm run dev
 ```
 tcc-sistema-academia/
 ├── backend/
+│   ├── dist/              # Código compilado TypeScript
 │   ├── src/
+│   │   ├── @types/        # Definições de tipos TypeScript
 │   │   ├── config/
 │   │   ├── controllers/
 │   │   ├── middleware/
 │   │   ├── routes/
 │   │   ├── services/
 │   │   └── utils/
-│   └── index.js
+│   └── index.ts           # Ponto de entrada em TypeScript
 └── frontend/
     ├── public/
     └── src/
@@ -93,6 +108,7 @@ tcc-sistema-academia/
         ├── context/
         ├── hooks/
         ├── pages/
+        ├── types/         # Definições de tipos TypeScript
         └── services/
 ```
 

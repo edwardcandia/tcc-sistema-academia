@@ -5,9 +5,89 @@
     <link rel="icon" type="image/png" href="/assets/icons/favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PlankGYM - Sistema de Gestão para Academias</title>
+    <style>
+      /* Estilos para o indicador de carregamento */
+      #loading-indicator {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        background-color: #f5f5f5;
+        z-index: 9999;
+      }
+      .spinner {
+        width: 60px;
+        height: 60px;
+        border: 5px solid #e0e0e0;
+        border-top: 5px solid #2E7D32;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      #error-panel {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        padding: 20px;
+        background-color: #f44336;
+        color: white;
+        text-align: center;
+        display: none;
+        z-index: 9999;
+      }
+    </style>
   </head>
   <body>
+    <!-- Indicador de carregamento -->
+    <div id="loading-indicator">
+      <div class="spinner"></div>
+      <div>Carregando PlankGYM...</div>
+    </div>
+    
+    <!-- Painel de erro -->
+    <div id="error-panel">
+      <strong>Erro ao carregar o aplicativo</strong>
+      <p id="error-message">Ocorreu um erro inesperado.</p>
+      <div>
+        <a href="/login-simples" style="color:white;text-decoration:underline">Tentar Login Simplificado</a>
+      </div>
+    </div>
+    
     <div id="root"></div>
+    
+    <script>
+      // Timeout para mostrar erro se a aplicação não carregar em 10 segundos
+      const loadTimeout = setTimeout(() => {
+        document.getElementById('loading-indicator').style.display = 'none';
+        document.getElementById('error-panel').style.display = 'block';
+        document.getElementById('error-message').textContent = 'O aplicativo está demorando muito para carregar. Tente um modo alternativo de acesso.';
+      }, 10000);
+      
+      // Remove o indicador de carregamento quando o aplicativo estiver pronto
+      window.addEventListener('load', function() {
+        clearTimeout(loadTimeout);
+        document.getElementById('loading-indicator').style.display = 'none';
+      });
+      
+      // Handler para erros globais
+      window.addEventListener('error', function(event) {
+        clearTimeout(loadTimeout);
+        document.getElementById('loading-indicator').style.display = 'none';
+        document.getElementById('error-panel').style.display = 'block';
+        document.getElementById('error-message').textContent = event.error?.message || 'Ocorreu um erro desconhecido';
+      });
+    </script>
+    
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

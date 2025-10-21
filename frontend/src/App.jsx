@@ -28,6 +28,7 @@ import ModeloTreinoDetalhePage from './pages/ModeloTreinoDetalhePage';
 import AlunoTreinoDetalhePage from './pages/AlunoTreinoDetalhePage';
 import NotificacoesAutomaticasPage from './pages/NotificacoesAutomaticasPage';
 import SimplePage from './pages/SimplePage';
+import LoginSimples from './pages/LoginSimples';
 
 function PrivateRoute({ children, roles }) {
   const { token, user } = useAuth();
@@ -68,6 +69,7 @@ function App() {
           <Routes>
             {/* Página inicial simples para diagnóstico */}
             <Route path="/simple" element={<SimplePage />} />
+          <Route path="/login-simples" element={<LoginSimples />} />
         
         {/* Rotas de Admin/Atendente */}
         <Route path="/login" element={<Login />} />
