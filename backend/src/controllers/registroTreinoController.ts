@@ -7,7 +7,7 @@ exports.registrarTreino = asyncHandler(async (req, res) => {
     const { treino_id, data, duracao, observacoes, avaliacao, aluno_id } = req.body;
     
     if (!aluno_id) {
-        throw new ApiError('ID do aluno é obrigatório', 400, ErrorTypes.VALIDATION_ERROR);
+        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno é obrigatório');
     }
 
     // Verificar se o treino existe e está atribuído ao aluno
@@ -55,11 +55,7 @@ exports.obterHistoricoTreinos = asyncHandler(async (req, res) => {
     
     // Verificar se o ID do aluno está definido
     if (!aluno_id) {
-        throw new ApiError(
-            'ID do aluno não fornecido na requisição',
-            400,
-            ErrorTypes.VALIDATION_ERROR
-        );
+        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido na requisição');
     }
     
     // Obter histórico de treinos com paginação
@@ -119,11 +115,7 @@ exports.obterEstatisticas = asyncHandler(async (req, res) => {
     
     // Verificar se o ID do aluno está definido
     if (!aluno_id) {
-        throw new ApiError(
-            'ID do aluno não fornecido na requisição',
-            400,
-            ErrorTypes.VALIDATION_ERROR
-        );
+        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido na requisição');
     }
     
     // Estatísticas básicas: total de treinos, tempo total, média de avaliação
@@ -176,11 +168,7 @@ exports.obterFrequenciaSemanal = asyncHandler(async (req, res) => {
     
     // Verificar se o ID do aluno está definido
     if (!aluno_id) {
-        throw new ApiError(
-            'ID do aluno não fornecido na requisição',
-            400,
-            ErrorTypes.VALIDATION_ERROR
-        );
+        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido na requisição');
     }
     
     // Obter frequência por dia da semana
@@ -220,11 +208,7 @@ exports.obterAvaliacoes = asyncHandler(async (req, res) => {
     
     // Verificar se o ID do aluno está definido
     if (!aluno_id) {
-        throw new ApiError(
-            'ID do aluno não fornecido na requisição',
-            400,
-            ErrorTypes.VALIDATION_ERROR
-        );
+        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido na requisição');
     }
     
     // Obter avaliações médias por treino

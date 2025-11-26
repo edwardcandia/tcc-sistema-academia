@@ -1,7 +1,7 @@
 // backend/src/routes/planosRoutes.js
 import express from "express";
 const router = express.Router();
-import planosController from "../controllers/planosController";
+const planosController: any = require('../controllers/planosController');
 import verifyToken from "../middleware/verifyToken";
 import authorizeRole from "../middleware/authorizeRole";
 

@@ -7,8 +7,8 @@ import { ApiError, ErrorTypes  } from "./errorHandler";
  * @param {Object} schema - Joi validation schema
  * @returns {Function} - Express middleware function
  */
-const validate = (schema) => {
-  return (req, res, next) => {
+const validate = (schema: any) => {
+  return (req: any, res: any, next: any) => {
     const validationOptions = {
       abortEarly: false, // Return all errors, not just the first one
       allowUnknown: true, // Ignore unknown props
@@ -16,7 +16,7 @@ const validate = (schema) => {
     };
 
     // Extract validatable data
-    const data = {};
+    const data: any = {};
     if (schema.body) data.body = req.body;
     if (schema.query) data.query = req.query;
     if (schema.params) data.params = req.params;

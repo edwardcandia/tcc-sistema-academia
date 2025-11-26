@@ -51,11 +51,13 @@ const getClient = async (): Promise<PoolClient> => {
   const originalQuery = client.query.bind(client);
   
   // Monkey patch the query method to add logging
-  client.query = async (text: string | { text: string; values: any[] }, params?: any[]) => {
-    const actualText = typeof text === 'string' ? text : text.text;
-    const actualParams = params || (typeof text === 'object' ? text.values : []);
+  client.query = async (...args: any[]) => {
+    const text = args[0];
+    const params = args[1];
+    const actualText = typeof text === 'string' ? text : (text && text.text) || '';
+    const actualParams = params || (text && text.values) || [];
     logQuery(actualText, actualParams);
-    return await originalQuery(text, params);
+    return await originalQuery(...args);
   };
   
   return client;
@@ -65,5 +67,19 @@ const getClient = async (): Promise<PoolClient> => {
 export default {
   query,
   getClient,
-  pool
+  pool,
+  transaction: async <T>(fn: (client: any) => Promise<T>): Promise<T> => {
+    const client = await getClient();
+    try {
+      await client.query('BEGIN');
+      const result = await fn(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+  }
 };

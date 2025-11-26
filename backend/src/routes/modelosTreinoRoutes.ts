@@ -1,7 +1,7 @@
 // backend/src/routes/modelosTreinoRoutes.js
 import express from "express";
 const router = express.Router();
-import modelosTreinoController from "../controllers/modelosTreinoController";
+const modelosTreinoController: any = require('../controllers/modelosTreinoController');
 import { authenticateUser, authorizeRoles  } from "../middleware/auth";
 
 // Rotas protegidas para administradores

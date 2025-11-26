@@ -8,9 +8,8 @@ exports.obterNotificacoes = asyncHandler(async (req, res) => {
     
     if (!aluno_id) {
         throw new ApiError(
-            'ID do aluno não fornecido na requisição',
-            400,
-            ErrorTypes.VALIDATION_ERROR
+            ErrorTypes.VALIDATION_ERROR.code,
+            'ID do aluno não fornecido na requisição'
         );
     }
     
@@ -35,9 +34,8 @@ exports.marcarComoLida = asyncHandler(async (req, res) => {
 
     if (!aluno_id) {
         throw new ApiError(
-            'ID do aluno não fornecido na requisição',
-            400,
-            ErrorTypes.VALIDATION_ERROR
+            ErrorTypes.VALIDATION_ERROR.code,
+            'ID do aluno não fornecido na requisição'
         );
     }
 
@@ -72,9 +70,8 @@ exports.marcarTodasComoLidas = asyncHandler(async (req, res) => {
 
     if (!aluno_id) {
         throw new ApiError(
-            'ID do aluno não fornecido na requisição',
-            400,
-            ErrorTypes.VALIDATION_ERROR
+            ErrorTypes.VALIDATION_ERROR.code,
+            'ID do aluno não fornecido na requisição'
         );
     }
 
@@ -96,9 +93,8 @@ exports.excluirNotificacao = asyncHandler(async (req, res) => {
 
     if (!aluno_id) {
         throw new ApiError(
-            'ID do aluno não fornecido na requisição',
-            400,
-            ErrorTypes.VALIDATION_ERROR
+            ErrorTypes.VALIDATION_ERROR.code,
+            'ID do aluno não fornecido na requisição'
         );
     }
 
@@ -146,9 +142,8 @@ exports.criarNotificacao = asyncHandler(async (req, res) => {
 
     if (!aluno_id || !texto) {
         throw new ApiError(
-            'ID do aluno e texto da notificação são obrigatórios',
-            400,
-            ErrorTypes.VALIDATION_ERROR
+            ErrorTypes.VALIDATION_ERROR.code,
+            'ID do aluno e texto da notificação são obrigatórios'
         );
     }
 
@@ -160,9 +155,8 @@ exports.criarNotificacao = asyncHandler(async (req, res) => {
 
     if (alunoExists.rows.length === 0) {
         throw new ApiError(
-            'Aluno não encontrado',
-            404,
-            ErrorTypes.NOT_FOUND_ERROR
+            ErrorTypes.NOT_FOUND.code,
+            'Aluno não encontrado'
         );
     }
 

@@ -1,6 +1,6 @@
 // backend/src/controllers/feedbackController.js
 import conn from "../config/database";
-import notificacoesController from "./notificacoesController";
+const notificacoesController: any = require('./notificacoesController');
 
 // Criar um novo feedback pelo aluno
 exports.criarFeedback = async (req, res) => {

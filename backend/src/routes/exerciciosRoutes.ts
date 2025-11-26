@@ -1,7 +1,7 @@
 // backend/src/routes/exerciciosRoutes.js
 import express from "express";
 const router = express.Router();
-import exerciciosController from "../controllers/exerciciosController";
+const exerciciosController: any = require('../controllers/exerciciosController');
 import verifyToken from "../middleware/verifyToken";
 import authorizeRole from "../middleware/authorizeRole";
 

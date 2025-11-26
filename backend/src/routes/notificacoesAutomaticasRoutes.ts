@@ -1,7 +1,7 @@
 // backend/src/routes/notificacoesAutomaticasRoutes.js
 import express from "express";
 const router = express.Router();
-import notificacoesAutomaticasController from "../controllers/notificacoesAutomaticasController";
+const notificacoesAutomaticasController: any = require('../controllers/notificacoesAutomaticasController');
 import verifyToken from "../middleware/verifyToken";
 import authorizeRole from "../middleware/authorizeRole";
 

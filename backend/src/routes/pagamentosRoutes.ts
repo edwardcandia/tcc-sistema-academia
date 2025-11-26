@@ -1,7 +1,7 @@
 // backend/src/routes/pagamentosRoutes.js
 import express from "express";
 const router = express.Router();
-import pagamentosController from "../controllers/pagamentosController";
+const pagamentosController: any = require('../controllers/pagamentosController');
 import verifyToken from "../middleware/verifyToken";
 
 router.post('/alunos/:id/pagamentos', verifyToken, pagamentosController.registrarPagamento);

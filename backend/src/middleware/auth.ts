@@ -1,6 +1,7 @@
 // backend/src/middleware/auth.js
 import jwt from "jsonwebtoken";
 import { ApiError, ErrorTypes  } from "../utils/errorHandler";
+import { Request, Response, NextFunction } from 'express';
 
 /**
  * Configuration for JWT tokens
@@ -12,13 +13,19 @@ const JWT_CONFIG = {
   }
 };
 
+// In production, require the JWT_SECRET to be set
+if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET não definido em ambiente de produção. Abortando.');
+  throw new Error('JWT_SECRET não definido');
+}
+
 /**
  * Generate JWT token for user
  * @param {Object} payload - The payload to include in the token
  * @returns {string} - JWT token
  */
-const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_CONFIG.secret, JWT_CONFIG.options);
+const generateToken = (payload: object) => {
+  return jwt.sign(payload, JWT_CONFIG.secret, JWT_CONFIG.options as jwt.SignOptions);
 };
 
 /**
@@ -26,7 +33,7 @@ const generateToken = (payload) => {
  * @param {Object} req - Express request object
  * @returns {Object} - Decoded token payload
  */
-const verifyToken = (req) => {
+const verifyToken = (req: Request) => {
   // Extract token from headers
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -43,15 +50,16 @@ const verifyToken = (req) => {
 
   try {
     // Verify and decode token
-    const decoded = jwt.verify(token, JWT_CONFIG.secret);
+    const decoded = jwt.verify(token, JWT_CONFIG.secret) as any;
     return decoded;
   } catch (error) {
-    if (error.name === 'JsonWebTokenError') {
+    const err: any = error;
+    if (err && err.name === 'JsonWebTokenError') {
       throw new ApiError(
         ErrorTypes.UNAUTHORIZED.code,
         'Token inválido.'
       );
-    } else if (error.name === 'TokenExpiredError') {
+    } else if (err && err.name === 'TokenExpiredError') {
       throw new ApiError(
         ErrorTypes.UNAUTHORIZED.code,
         'Token expirado. Por favor, faça login novamente.'
@@ -67,7 +75,7 @@ const verifyToken = (req) => {
 /**
  * Middleware to authenticate user (staff or admin)
  */
-const authenticateUser = (req, res, next) => {
+const authenticateUser = (req: Request & { user?: any }, res: Response, next: NextFunction) => {
   try {
     const decoded = verifyToken(req);
     
@@ -81,7 +89,7 @@ const authenticateUser = (req, res, next) => {
     
     // Set user info in request
     req.user = decoded;
-    req.userId = decoded.id;
+    (req as any).userId = (decoded as any).id;
     
     next();
   } catch (error) {
@@ -95,8 +103,8 @@ const authenticateUser = (req, res, next) => {
  * Middleware to authorize specific roles
  * @param {Array} allowedRoles - Array of allowed roles
  */
-const authorizeRoles = (allowedRoles) => {
-  return (req, res, next) => {
+const authorizeRoles = (allowedRoles: string[]) => {
+  return (req: Request & { user?: any }, res: Response, next: NextFunction) => {
     try {
       if (!req.user || !req.user.cargo) {
         throw new ApiError(

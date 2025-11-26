@@ -1,7 +1,7 @@
 // backend/src/routes/notificacoesRoutes.js
 import express from "express";
 const router = express.Router();
-import notificacoesController from "../controllers/notificacoesController";
+const notificacoesController: any = require('../controllers/notificacoesController');
 import { authenticateUser, authorizeRoles  } from "../middleware/auth";
 
 // Proteção administrativa para gerenciar notificações

@@ -3,9 +3,10 @@ import db from "../config/database";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { generateToken, JWT_CONFIG  } from "../middleware/auth";
+import { Request, Response } from 'express';
 
-// Função para verificar a validade de um token
-const verifyToken = (req, res) => {
+// Função para verificar a validade de um token (controller - resposta simples)
+const verifyToken = (req: Request, res: Response) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
@@ -18,8 +19,8 @@ const verifyToken = (req, res) => {
       return res.json({ valid: false, message: 'Formato de token inválido.' });
     }
 
-    // Verificar o token
-    const decoded = jwt.verify(token, JWT_CONFIG.secret);
+    // Verificar o token (não logar token por segurança)
+    const decoded: any = jwt.verify(token, JWT_CONFIG.secret);
     
     // Token é válido
     return res.json({ 
@@ -31,12 +32,12 @@ const verifyToken = (req, res) => {
       } 
     });
   } catch (error) {
-    console.error('Erro ao verificar token:', error);
+    console.error('Erro ao verificar token: ', error && error.message ? error.message : error);
     return res.json({ valid: false, message: 'Token inválido ou expirado.' });
   }
 };
 
-const registerUser = async (req, res) => {
+const registerUser = async (req: Request, res: Response) => {
     // Esta função para registrar admins/atendentes continua a mesma
     const { nome, email, senha, cargo } = req.body;
     if (!nome || !email || !senha || !cargo) { return res.status(400).json({ error: 'Todos os campos são obrigatórios.' }); }
@@ -52,7 +53,7 @@ const registerUser = async (req, res) => {
 };
 
 // --- NOVA FUNÇÃO DE LOGIN INTELIGENTE ---
-const login = async (req, res) => {
+const login = async (req: Request, res: Response) => {
     const { email, senha } = req.body;
     if (!email || !senha) {
         return res.status(400).json({ error: 'Email e senha são obrigatórios.' });
@@ -77,11 +78,9 @@ const login = async (req, res) => {
             console.log('Gerando token para usuário com payload:', tokenPayload);
             
             const token = generateToken(tokenPayload);
-            console.log('Token gerado para usuário:', token.substring(0, 20) + '...');
-            
             return res.json({
-                token,
-                user: { id: user.id, nome: user.nome, email: user.email, cargo: user.cargo },
+              token,
+              user: { id: user.id, nome: user.nome, email: user.email, cargo: user.cargo },
             });
         }
 
@@ -92,13 +91,13 @@ const login = async (req, res) => {
         return res.status(404).json({ error: 'Credenciais inválidas.' });
 
     } catch (error) {
-        console.error("Erro no login unificado:", error);
-        res.status(500).json({ error: 'Erro no servidor durante o login.' });
+      console.error("Erro no login unificado:", error && error.message ? error.message : error);
+      res.status(500).json({ error: 'Erro no servidor durante o login.' });
     }
 };
 
-export {
+  export default {
     registerUser,
     login,
     verifyToken
-};
+  };

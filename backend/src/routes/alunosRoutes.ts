@@ -1,7 +1,7 @@
 // backend/src/routes/alunosRoutes.js
 import express from "express";
 const router = express.Router();
-import alunosController from "../controllers/alunosController";
+const alunosController: any = require('../controllers/alunosController');
 import verifyToken from "../middleware/verifyToken"; // 1. Importa o middleware
 
 // 2. Protege todas as rotas de alunos

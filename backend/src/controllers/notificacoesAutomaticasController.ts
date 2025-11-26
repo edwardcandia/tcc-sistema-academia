@@ -1,7 +1,7 @@
 // backend/src/controllers/notificacoesAutomaticasController.js
 import conn from "../config/database";
 import emailService from "../services/emailService";
-import notificacoesController from "./notificacoesController";
+const notificacoesController: any = require('./notificacoesController');
 
 /**
  * Verifica e envia lembretes de pagamentos próximos do vencimento

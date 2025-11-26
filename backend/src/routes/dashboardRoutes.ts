@@ -1,7 +1,7 @@
 // backend/src/routes/dashboardRoutes.js
 import express from "express";
 const router = express.Router();
-import dashboardController from "../controllers/dashboardController";
+const dashboardController: any = require('../controllers/dashboardController');
 import verifyToken from "../middleware/verifyToken";
 
 // Aplicar middleware de verificação de token para todas as rotas do dashboard

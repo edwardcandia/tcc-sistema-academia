@@ -1,7 +1,7 @@
 // backend/src/routes/registroTreinoRoutes.js
 import express from "express";
 const router = express.Router();
-import registroTreinoController from "../controllers/registroTreinoController";
+const registroTreinoController: any = require('../controllers/registroTreinoController');
 import { validate, schemas  } from "../utils/validator";
 import { authenticateUser, authorizeRoles  } from "../middleware/auth";
 
