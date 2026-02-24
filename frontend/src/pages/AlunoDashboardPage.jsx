@@ -1,4 +1,3 @@
-// frontend/src/pages/AlunoDashboardPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
@@ -17,8 +16,8 @@ import {
 } from '@mui/icons-material';
 import AlunoProgressoCharts from '../components/AlunoProgressoCharts';
 import AlunoFeedbackForm from '../components/AlunoFeedbackForm';
-import TokenTester from '../components/TokenTester';
 import { useNavigate, Link } from 'react-router-dom';
+import { API_BASE } from '../services/api';
 
 function AlunoDashboardPage() {
     const { authHeader, aluno, logout } = useAuth();
@@ -72,7 +71,7 @@ function AlunoDashboardPage() {
     // Função para salvar o registro de treino
     const handleSalvarTreinoRealizado = async () => {
         try {
-            const response = await axios.post('http://localhost:3001/api/registro-treino/registrar', 
+            const response = await axios.post(`${API_BASE}/registro-treino/registrar`, 
                 treinoRealizado, 
                 authHeader()
             );
@@ -106,8 +105,8 @@ function AlunoDashboardPage() {
             try {
                 setLoading(true);
                 const [resDados, resPagamentos] = await Promise.all([
-                    axios.get('http://localhost:3001/api/portal/meus-dados', authHeader()),
-                    axios.get('http://localhost:3001/api/portal/meus-pagamentos', authHeader())
+                    axios.get(`${API_BASE}/portal/meus-dados`, authHeader()),
+                    axios.get(`${API_BASE}/portal/meus-pagamentos`, authHeader())
                 ]);
                 setMeusDados(resDados.data);
                 setMeusPagamentos(resPagamentos.data);
@@ -143,66 +142,20 @@ function AlunoDashboardPage() {
     // Carregar treinos do aluno
     useEffect(() => {
         const fetchTreinos = async () => {
-            if (!aluno) {
-                console.log('Não foi possível buscar treinos: aluno não disponível');
-                return;
-            }
+            if (!aluno) return;
             
             try {
                 setLoadingTreinos(true);
-                
-                // Verifica se o token está presente no localStorage antes de fazer a requisição
-                const storedToken = localStorage.getItem('token');
-                if (!storedToken) {
-                    console.error('Token não encontrado no localStorage');
-                    alert('Sua sessão expirou. Por favor, faça login novamente.');
-                    logout();
-                    return;
-                }
-                
-                console.log('ID do aluno:', aluno.id);
-                console.log('Token usado:', storedToken.substring(0, 15) + '...');
-                
-                // Endpoint para buscar os modelos de treino do aluno
-                const url = `http://localhost:3001/api/alunos/${aluno.id}/modelos-treino`;
-                console.log('Fazendo requisição para:', url);
-                
-                // Usa o token diretamente para evitar problemas com o authHeader
                 const response = await axios.get(
-                    url, 
-                    { headers: { Authorization: `Bearer ${storedToken}` } }
+                    `${API_BASE}/alunos/${aluno.id}/modelos-treino`,
+                    authHeader()
                 );
-                
-                console.log('Resposta da API de treinos:', response.data);
-                
-                if (Array.isArray(response.data)) {
-                    setMeusTreinos(response.data);
-                } else {
-                    console.error('Resposta da API não é um array:', response.data);
-                    setMeusTreinos([]);
-                }
+                setMeusTreinos(Array.isArray(response.data) ? response.data : []);
             } catch (error) {
-                console.error("Erro ao buscar treinos do aluno:", error);
-                
-                if (error.response) {
-                    console.error("Status do erro:", error.response.status);
-                    console.error("Detalhes do erro:", error.response.data);
-                    
-                    // Se o erro for 401 ou 403, pode ser um problema de autenticação
-                    if (error.response.status === 401 || error.response.status === 403) {
-                        console.warn("Possível problema de autenticação. Token inválido ou expirado.");
-                        alert('Sessão expirada ou inválida. Por favor, faça login novamente.');
-                        logout();
-                    }
-                    
-                    // Se for erro 500, mostra uma mensagem mais detalhada
-                    else if (error.response.status === 500) {
-                        console.error("Erro interno do servidor:", error.response.data);
-                        alert('Erro ao buscar seus treinos. Por favor, tente novamente mais tarde.');
-                    }
-                } else {
-                    console.error("Erro de rede ou outro erro:", error.message);
-                    alert('Erro de conexão. Por favor, verifique sua internet e tente novamente.');
+                console.error('Erro ao buscar treinos do aluno:', error);
+                const status = error.response?.status;
+                if (status === 401 || status === 403) {
+                    logout();
                 }
             } finally {
                 setLoadingTreinos(false);
@@ -216,7 +169,7 @@ function AlunoDashboardPage() {
         const fetchHistoricoTreinos = async () => {
             if (!authHeader || !aluno) return;
             try {
-                const response = await axios.get('http://localhost:3001/api/registro-treino/historico', authHeader());
+                const response = await axios.get(`${API_BASE}/registro-treino/historico`, authHeader());
                 if (response.data.success) {
                     setProgresso(response.data.data);
                 }
@@ -251,7 +204,7 @@ function AlunoDashboardPage() {
         const fetchNotificacoes = async () => {
             if (!authHeader || !aluno) return;
             try {
-                const response = await axios.get('http://localhost:3001/api/notificacoes', authHeader());
+                const response = await axios.get(`${API_BASE}/notificacoes`, authHeader());
                 if (response.data.success) {
                     setNotificacoes(response.data.data);
                 }
@@ -275,7 +228,7 @@ function AlunoDashboardPage() {
     // Marcar notificação como lida
     const marcarNotificacaoLida = async (id) => {
         try {
-            await axios.patch(`http://localhost:3001/api/notificacoes/${id}/marcar-lida`, {}, authHeader());
+            await axios.patch(`${API_BASE}/notificacoes/${id}/marcar-lida`, {}, authHeader());
             setNotificacoes(prev => prev.map(notif => 
                 notif.id === id ? {...notif, lida: true} : notif
             ));
@@ -287,7 +240,7 @@ function AlunoDashboardPage() {
     // Marcar todas as notificações como lidas
     const marcarTodasLidas = async () => {
         try {
-            await axios.patch('http://localhost:3001/api/notificacoes/marcar-todas-lidas', {}, authHeader());
+            await axios.patch(`${API_BASE}/notificacoes/marcar-todas-lidas`, {}, authHeader());
             setNotificacoes(prev => prev.map(notif => ({...notif, lida: true})));
         } catch (error) {
             console.error("Erro ao marcar todas notificações como lidas:", error);
@@ -512,13 +465,7 @@ function AlunoDashboardPage() {
                             </Button>
                         </Paper>
                         
-                        {/* Componente de teste de token */}
-                        <Box sx={{ mt: 4, mb: 2 }}>
-                            <Typography variant="h6" sx={{ mb: 1 }}>
-                                Teste de Autenticação
-                            </Typography>
-                            <TokenTester />
-                        </Box>
+
                     </>
                 );
                 

@@ -1,25 +1,24 @@
-// backend/src/routes/exerciciosRoutes.js
+// backend/src/routes/exerciciosRoutes.ts
 import express from "express";
+import { authenticateUser, authorizeRoles } from "../middleware/auth";
+import * as exerciciosController from "../controllers/exerciciosController";
+import { Request, Response } from 'express';
+
 const router = express.Router();
-const exerciciosController: any = require('../controllers/exerciciosController');
-import verifyToken from "../middleware/verifyToken";
-import authorizeRole from "../middleware/authorizeRole";
 
 // Rota pública para obter a lista de grupos musculares válidos
-router.get('/exercicios/grupos', (req, res) => {
+router.get('/exercicios/grupos', (req: Request, res: Response) => {
     res.json({ grupos: exerciciosController.GRUPOS_MUSCULARES });
 });
 
-// Rotas protegidas que exigem autenticação
-
 // Rotas que permitem visualização por instrutores e administradores
-router.get('/exercicios', verifyToken, authorizeRole(['administrador', 'instrutor']), exerciciosController.getAllExercicios);
-router.get('/exercicios/:id', verifyToken, authorizeRole(['administrador', 'instrutor']), exerciciosController.getExercicioById);
-router.get('/exercicios/grupo/:grupo', verifyToken, authorizeRole(['administrador', 'instrutor']), exerciciosController.getExerciciosByGrupo);
+router.get('/exercicios', authenticateUser, authorizeRoles(['administrador', 'instrutor']), exerciciosController.getAllExercicios);
+router.get('/exercicios/:id', authenticateUser, authorizeRoles(['administrador', 'instrutor']), exerciciosController.getExercicioById);
+router.get('/exercicios/grupo/:grupo', authenticateUser, authorizeRoles(['administrador', 'instrutor']), exerciciosController.getExerciciosByGrupo);
 
 // Rotas que permitem modificação apenas por administradores
-router.post('/exercicios', verifyToken, authorizeRole(['administrador']), exerciciosController.createExercicio);
-router.put('/exercicios/:id', verifyToken, authorizeRole(['administrador']), exerciciosController.updateExercicio);
-router.delete('/exercicios/:id', verifyToken, authorizeRole(['administrador']), exerciciosController.deleteExercicio);
+router.post('/exercicios', authenticateUser, authorizeRoles(['administrador']), exerciciosController.createExercicio);
+router.put('/exercicios/:id', authenticateUser, authorizeRoles(['administrador']), exerciciosController.updateExercicio);
+router.delete('/exercicios/:id', authenticateUser, authorizeRoles(['administrador']), exerciciosController.deleteExercicio);
 
 export default router;

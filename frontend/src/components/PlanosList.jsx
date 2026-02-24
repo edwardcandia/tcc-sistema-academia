@@ -1,4 +1,3 @@
-// frontend/src/components/PlanosList.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import {
@@ -9,6 +8,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../services/api';
 
 // Estilo para o Modal (pop-up)
 const styleModal = {
@@ -36,7 +36,7 @@ function PlanosList({ planos, onPlanoExcluido, onPlanoAtualizado }) {
   const handleDelete = async (id) => {
     if (window.confirm('Tem certeza que deseja excluir este plano?')) {
       try {
-        await axios.delete(`http://localhost:3001/api/planos/${id}`, authHeader());
+        await axios.delete(`${API_BASE}/planos/${id}`, authHeader());
         toast.success('Plano excluído com sucesso!');
         onPlanoExcluido();
       } catch (error) {
@@ -64,7 +64,7 @@ function PlanosList({ planos, onPlanoExcluido, onPlanoAtualizado }) {
   const handleUpdateSubmit = async (event) => {
     event.preventDefault();
     try {
-      await axios.put(`http://localhost:3001/api/planos/${planoParaEditar.id}`, planoParaEditar, authHeader());
+      await axios.put(`${API_BASE}/planos/${planoParaEditar.id}`, planoParaEditar, authHeader());
       toast.success('Plano atualizado com sucesso!');
       onPlanoAtualizado();
       handleCloseEditModal();

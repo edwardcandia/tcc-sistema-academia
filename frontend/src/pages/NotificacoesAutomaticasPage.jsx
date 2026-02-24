@@ -1,4 +1,3 @@
-// frontend/src/pages/NotificacoesAutomaticasPage.jsx
 import React, { useState } from 'react';
 import { 
     Container, Box, Typography, Paper, Button, TextField, Grid, 
@@ -13,6 +12,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { ptBR } from 'date-fns/locale';
+import { API_BASE } from '../services/api';
 
 function NotificacoesAutomaticasPage() {
     const { authHeader } = useAuth();
@@ -38,7 +38,7 @@ function NotificacoesAutomaticasPage() {
         setLoading(true);
         try {
             const response = await axios.post(
-                'http://localhost:3001/api/notificacoes-automaticas/testar-email',
+                `${API_BASE}/notificacoes-automaticas/testar-email`,
                 testeEmail,
                 authHeader()
             );
@@ -67,7 +67,7 @@ function NotificacoesAutomaticasPage() {
         setLoading(true);
         try {
             const response = await axios.post(
-                'http://localhost:3001/api/notificacoes-automaticas/enviar-lembretes-pagamento',
+                `${API_BASE}/notificacoes-automaticas/enviar-lembretes-pagamento`,
                 {},
                 authHeader()
             );
@@ -96,7 +96,7 @@ function NotificacoesAutomaticasPage() {
         setLoading(true);
         try {
             const response = await axios.post(
-                'http://localhost:3001/api/notificacoes-automaticas/enviar-lembretes-treino',
+                `${API_BASE}/notificacoes-automaticas/enviar-lembretes-treino`,
                 {},
                 authHeader()
             );

@@ -1,13 +1,13 @@
-// backend/src/routes/alunosRoutes.js
+// backend/src/routes/alunosRoutes.ts
 import express from "express";
-const router = express.Router();
-const alunosController: any = require('../controllers/alunosController');
-import verifyToken from "../middleware/verifyToken"; // 1. Importa o middleware
+import { authenticateUser } from "../middleware/auth";
+import * as alunosController from "../controllers/alunosController";
 
-// 2. Protege todas as rotas de alunos
-router.get('/alunos', verifyToken, alunosController.getAlunos);
-router.post('/alunos', verifyToken, alunosController.createAluno);
-router.put('/alunos/:id', verifyToken, alunosController.updateAluno);
-router.delete('/alunos/:id', verifyToken, alunosController.deleteAluno);
+const router = express.Router();
+
+router.get('/alunos', authenticateUser, alunosController.getAlunos);
+router.post('/alunos', authenticateUser, alunosController.createAluno);
+router.put('/alunos/:id', authenticateUser, alunosController.updateAluno);
+router.delete('/alunos/:id', authenticateUser, alunosController.deleteAluno);
 
 export default router;

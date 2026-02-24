@@ -1,4 +1,3 @@
-// frontend/src/components/AlunosList.jsx
 import React, { useState, forwardRef } from 'react';
 import axios from 'axios';
 import {
@@ -14,6 +13,7 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import { IMaskInput } from 'react-imask';
+import { API_BASE } from '../services/api';
 
 // --- Adaptadores para as máscaras ---
 const CpfMask = forwardRef(function CpfMask(props, ref) {
@@ -54,7 +54,7 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
   const handleOpenHistoricoModal = async (aluno) => {
     setAlunoParaHistorico(aluno);
     try {
-      const response = await axios.get(`http://localhost:3001/api/alunos/${aluno.id}/pagamentos`, authHeader());
+      const response = await axios.get(`${API_BASE}/alunos/${aluno.id}/pagamentos`, authHeader());
       setHistoricoPagamentos(response.data);
       setHistoricoModalOpen(true);
     } catch (error) {
@@ -66,7 +66,7 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
   const handleDeletePagamento = async (pagamentoId) => {
     if (window.confirm('Tem certeza que deseja excluir este pagamento?')) {
         try {
-            await axios.delete(`http://localhost:3001/api/pagamentos/${pagamentoId}`, authHeader());
+            await axios.delete(`${API_BASE}/pagamentos/${pagamentoId}`, authHeader());
             toast.success('Pagamento excluído com sucesso!');
             handleOpenHistoricoModal(alunoParaHistorico);
             onAlunoAtualizado();
@@ -88,7 +88,7 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
     e.preventDefault();
     try {
       const dataPagamento = { valor_pago: parseFloat(valorPago), data_pagamento: new Date().toISOString().split('T')[0] };
-      await axios.post(`http://localhost:3001/api/alunos/${alunoParaPagamento.id}/pagamentos`, dataPagamento, authHeader());
+      await axios.post(`${API_BASE}/alunos/${alunoParaPagamento.id}/pagamentos`, dataPagamento, authHeader());
       toast.success('Pagamento registrado com sucesso!');
       onAlunoAtualizado();
       handleClosePagamentoModal();
@@ -113,7 +113,7 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
     e.preventDefault();
     try {
       const dadosParaEnviar = { ...alunoParaEditar, plano_id: parseInt(alunoParaEditar.plano_id, 10) || null };
-      await axios.put(`http://localhost:3001/api/alunos/${alunoParaEditar.id}`, dadosParaEnviar, authHeader());
+      await axios.put(`${API_BASE}/alunos/${alunoParaEditar.id}`, dadosParaEnviar, authHeader());
       toast.success('Aluno atualizado com sucesso!');
       onAlunoAtualizado();
       handleCloseEditModal();
@@ -125,7 +125,7 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
   const handleDelete = async (id) => {
     if (window.confirm('Tem certeza?')) {
       try {
-        await axios.delete(`http://localhost:3001/api/alunos/${id}`, authHeader());
+        await axios.delete(`${API_BASE}/alunos/${id}`, authHeader());
         toast.success('Aluno excluído com sucesso!');
         onAlunoExcluido();
       } catch (error) {

@@ -1,4 +1,3 @@
-// frontend/src/pages/PlanosPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +7,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PlanosForm from '../components/PlanosForm';
 import PlanosList from '../components/PlanosList';
+import { API_BASE } from '../services/api';
 
 function PlanosPage() {
   const [planos, setPlanos] = useState([]);
@@ -15,7 +15,7 @@ function PlanosPage() {
 
   const fetchPlanos = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/planos', authHeader());
+      const response = await axios.get(`${API_BASE}/planos`, authHeader());
       setPlanos(response.data);
     } catch (error) {
       console.error('Erro ao buscar planos:', error);

@@ -2,8 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Grid, Paper, Typography, Box } from '@mui/material';
+import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../services/api';
 
 function Dashboard() {
+  const { authHeader } = useAuth();
   const [metrics, setMetrics] = useState({
     totalAlunos: 0,
     alunosAtivos: 0,
@@ -12,16 +15,17 @@ function Dashboard() {
   });
 
   useEffect(() => {
+    if (!authHeader) return;
     const fetchMetrics = async () => {
       try {
-        const response = await axios.get('http://localhost:3001/api/dashboard/metrics');
+        const response = await axios.get(`${API_BASE}/dashboard/metrics`, authHeader());
         setMetrics(response.data);
       } catch (error) {
         console.error("Erro ao buscar métricas do dashboard:", error);
       }
     };
     fetchMetrics();
-  }, []);
+  }, [authHeader]);
 
   return (
     <Box sx={{ mb: 4 }}>

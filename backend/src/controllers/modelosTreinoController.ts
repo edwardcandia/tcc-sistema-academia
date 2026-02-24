@@ -1,12 +1,11 @@
-// backend/src/controllers/modelosTreinoController.js
-import db from "../config/database";
-import { ApiError, ErrorTypes, asyncHandler  } from "../utils/errorHandler";
+﻿import { Request, Response } from 'express';
+import db from '../config/database';
+import { ApiError, ErrorTypes, asyncHandler } from '../utils/errorHandler';
 
-// Criar um novo modelo de treino (ex: "Treino A")
-const createModeloTreino = async (req, res) => {
+const createModeloTreino = async (req: Request, res: Response): Promise<void> => {
     const { nome, descricao } = req.body;
     if (!nome) {
-        return res.status(400).json({ error: 'O nome do modelo de treino é obrigatório.' });
+        return void res.status(400).json({ error: 'O nome do modelo de treino é obrigatório.' });
     }
     try {
         const result = await db.query(
@@ -19,8 +18,7 @@ const createModeloTreino = async (req, res) => {
     }
 };
 
-// Obter todos os modelos de treino
-const getAllModelosTreino = async (req, res) => {
+const getAllModelosTreino = async (req: Request, res: Response): Promise<void> => {
     try {
         const result = await db.query('SELECT * FROM modelos_treino ORDER BY nome ASC');
         res.status(200).json(result.rows);
@@ -29,45 +27,41 @@ const getAllModelosTreino = async (req, res) => {
     }
 };
 
-// Obter detalhes de um modelo de treino, incluindo seus exercícios
-const getModeloTreinoById = async (req, res) => {
+const getModeloTreinoById = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     try {
         const modeloResult = await db.query('SELECT * FROM modelos_treino WHERE id = $1', [id]);
         if (modeloResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Modelo de treino não encontrado.' });
+            res.status(404).json({ error: 'Modelo de treino não encontrado.' });
+            return;
         }
 
         const exerciciosQuery = `
-            SELECT edm.id, e.nome, e.grupo_muscular, edm.series, edm.repeticoes, edm.descanso_segundos
-            FROM exercicios_do_modelo edm
-            JOIN exercicios e ON edm.exercicio_id = e.id
-            WHERE edm.modelo_treino_id = $1
-            ORDER BY edm.ordem ASC;
+            SELECT it.id, e.nome, e.grupo_muscular, it.series, it.repeticoes, it.dia_semana, it.ordem
+            FROM itens_treino it
+            JOIN exercicios e ON it.exercicio_id = e.id
+            WHERE it.modelo_treino_id = $1
+            ORDER BY it.dia_semana, it.ordem ASC;
         `;
         const exerciciosResult = await db.query(exerciciosQuery, [id]);
 
-        const response = {
-            ...modeloResult.rows[0],
-            exercicios: exerciciosResult.rows
-        };
-        res.status(200).json(response);
+        res.status(200).json({ ...modeloResult.rows[0], exercicios: exerciciosResult.rows });
     } catch (error) {
         res.status(500).json({ error: 'Erro ao buscar detalhes do modelo de treino.' });
     }
 };
 
-// Adicionar um exercício a um modelo de treino
-const addExercicioAoModelo = async (req, res) => {
-    const { id } = req.params; // ID do modelo de treino
-    const { exercicio_id, series, repeticoes, descanso_segundos, ordem } = req.body;
+const addExercicioAoModelo = async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const { exercicio_id, series, repeticoes, dia_semana, ordem, observacoes } = req.body;
     if (!exercicio_id || !series || !repeticoes) {
-        return res.status(400).json({ error: 'Exercício, séries e repetições são obrigatórios.' });
+        res.status(400).json({ error: 'Exercício, séries e repetições são obrigatórios.' });
+        return;
     }
     try {
         const result = await db.query(
-            'INSERT INTO exercicios_do_modelo (modelo_treino_id, exercicio_id, series, repeticoes, descanso_segundos, ordem) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-            [id, exercicio_id, series, repeticoes, descanso_segundos, ordem]
+            'INSERT INTO itens_treino (modelo_treino_id, exercicio_id, series, repeticoes, dia_semana, ordem, observacoes) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [id, exercicio_id, series, repeticoes, dia_semana, ordem, observacoes]
         );
         res.status(201).json(result.rows[0]);
     } catch (error) {
@@ -75,13 +69,13 @@ const addExercicioAoModelo = async (req, res) => {
     }
 };
 
-// Remover um exercício de um modelo de treino
-const removeExercicioDoModelo = async (req, res) => {
+const removeExercicioDoModelo = async (req: Request, res: Response): Promise<void> => {
     const { exercicioDoModeloId } = req.params;
     try {
-        const result = await db.query('DELETE FROM exercicios_do_modelo WHERE id = $1', [exercicioDoModeloId]);
+        const result = await db.query('DELETE FROM itens_treino WHERE id = $1', [exercicioDoModeloId]);
         if (result.rowCount === 0) {
-            return res.status(404).json({ error: 'Exercício não encontrado neste modelo.' });
+            res.status(404).json({ error: 'Exercício não encontrado neste modelo.' });
+            return;
         }
         res.status(200).json({ message: 'Exercício removido do modelo com sucesso.' });
     } catch (error) {
@@ -89,12 +83,12 @@ const removeExercicioDoModelo = async (req, res) => {
     }
 };
 
-const deleteModeloTreino = async (req, res) => {
+const deleteModeloTreino = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     try {
         const result = await db.query('DELETE FROM modelos_treino WHERE id = $1', [id]);
         if(result.rowCount === 0) {
-            return res.status(404).json({error: 'Modelo de treino não encontrado'});
+            return void res.status(404).json({error: 'Modelo de treino não encontrado'});
         }
         res.status(200).json({message: 'Modelo de treino deletado com sucesso'});
     } catch(error) {
@@ -102,70 +96,53 @@ const deleteModeloTreino = async (req, res) => {
     }
 }
 
-// Duplicar um modelo de treino existente (com seus exercícios)
-const duplicateModeloTreino = async (req, res) => {
+const duplicateModeloTreino = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
     const { nome, descricao } = req.body;
-    
+
     if (!nome) {
-        return res.status(400).json({ error: 'O nome do novo modelo é obrigatório.' });
+        return void res.status(400).json({ error: 'O nome do novo modelo e obrigatorio.' });
     }
-    
+
     try {
-        // Verificar se o modelo original existe
         const modeloOriginal = await db.query('SELECT * FROM modelos_treino WHERE id = $1', [id]);
         if (modeloOriginal.rows.length === 0) {
-            return res.status(404).json({ error: 'Modelo de treino original não encontrado.' });
+            return void res.status(404).json({ error: 'Modelo de treino original não encontrado.' });
         }
-        
-        // Criar um novo modelo baseado no original
-        const novoModeloResult = await db.query(
+
+        const novoModelo = await db.query(
             'INSERT INTO modelos_treino (nome, descricao) VALUES ($1, $2) RETURNING *',
-            [nome, descricao || modeloOriginal.rows[0].descricao + ' (Cópia)']
+            [nome, descricao || `${modeloOriginal.rows[0].descricao} (Copia)`]
         );
-        
-        const novoModeloId = novoModeloResult.rows[0].id;
-        
-        // Buscar os exercícios do modelo original
-        const exerciciosOriginais = await db.query(
-            `SELECT exercicio_id, series, repeticoes, descanso_segundos, ordem 
-             FROM exercicios_do_modelo 
-             WHERE modelo_treino_id = $1`,
+        const novoModeloId = novoModelo.rows[0].id;
+
+        const itensTreinoOriginais = await db.query(
+            'SELECT exercicio_id, series, repeticoes, dia_semana, ordem, observacoes FROM itens_treino WHERE modelo_treino_id = $1',
             [id]
         );
-        
-        // Duplicar os exercícios para o novo modelo
-        if (exerciciosOriginais.rows.length > 0) {
-            const insertValues = exerciciosOriginais.rows.map(ex => {
-                return `(${novoModeloId}, ${ex.exercicio_id}, ${ex.series}, ${ex.repeticoes}, ${ex.descanso_segundos || 'NULL'}, ${ex.ordem || 'NULL'})`;
-            }).join(', ');
-            
+
+        // Use parameterized queries to avoid SQL injection — never interpolate DB values into SQL strings
+        for (const item of itensTreinoOriginais.rows) {
             await db.query(
-                `INSERT INTO exercicios_do_modelo 
-                 (modelo_treino_id, exercicio_id, series, repeticoes, descanso_segundos, ordem)
-                 VALUES ${insertValues}`
+                'INSERT INTO itens_treino (modelo_treino_id, exercicio_id, series, repeticoes, dia_semana, ordem, observacoes) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+                [novoModeloId, item.exercicio_id, item.series, item.repeticoes, item.dia_semana, item.ordem, item.observacoes]
             );
         }
-        
+
         res.status(201).json({
-            message: 'Modelo de treino duplicado com sucesso',
-            modelo: novoModeloResult.rows[0],
-            exerciciosCopiados: exerciciosOriginais.rows.length
+            message: 'Modelo duplicado com sucesso',
+            modelo: novoModelo.rows[0],
+            exerciciosCopiados: itensTreinoOriginais.rows.length
         });
     } catch (error) {
         console.error('Erro ao duplicar modelo de treino:', error);
         res.status(500).json({ error: 'Erro ao duplicar modelo de treino.' });
     }
-}
+};
 
 // Obter modelos de treino de um aluno específico
 const getModelosTreinoByAlunoId = asyncHandler(async (req, res) => {
     const { alunoId } = req.params;
-    
-    // Não precisa mais verificar se é o próprio aluno acessando seus dados
-    // O acesso agora é aberto
-    
-    // Verificar se o aluno existe
     const alunoResult = await db.query('SELECT id FROM alunos WHERE id = $1', [alunoId]);
     if (alunoResult.rows.length === 0) {
         throw new ApiError(
@@ -190,21 +167,20 @@ const getModelosTreinoByAlunoId = asyncHandler(async (req, res) => {
     });
 });
 
-// Atribuir um modelo de treino a um aluno
-const assignModeloTreinoToAluno = async (req, res) => {
+const assignModeloTreinoToAluno = async (req: Request, res: Response): Promise<void> => {
     const { alunoId, modeloTreinoId } = req.params;
     
     try {
         // Verificar se o aluno existe
         const alunoResult = await db.query('SELECT id FROM alunos WHERE id = $1', [alunoId]);
         if (alunoResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Aluno não encontrado.' });
+            return void res.status(404).json({ error: 'Aluno não encontrado.' });
         }
         
         // Verificar se o modelo de treino existe
         const modeloResult = await db.query('SELECT id FROM modelos_treino WHERE id = $1', [modeloTreinoId]);
         if (modeloResult.rows.length === 0) {
-            return res.status(404).json({ error: 'Modelo de treino não encontrado.' });
+            return void res.status(404).json({ error: 'Modelo de treino não encontrado.' });
         }
         
         // Verificar se já existe essa atribuição
@@ -214,7 +190,7 @@ const assignModeloTreinoToAluno = async (req, res) => {
         );
         
         if (existeResult.rows.length > 0) {
-            return res.status(409).json({ error: 'Este modelo de treino já está atribuído a este aluno.' });
+            return void res.status(409).json({ error: 'Este modelo de treino já está atribuído a este aluno.' });
         }
         
         // Atribuir o modelo de treino ao aluno
@@ -230,8 +206,7 @@ const assignModeloTreinoToAluno = async (req, res) => {
     }
 };
 
-// Remover atribuição de um modelo de treino a um aluno
-const removeModeloTreinoFromAluno = async (req, res) => {
+const removeModeloTreinoFromAluno = async (req: Request, res: Response): Promise<void> => {
     const { alunoId, modeloTreinoId } = req.params;
     
     try {
@@ -241,7 +216,7 @@ const removeModeloTreinoFromAluno = async (req, res) => {
         );
         
         if (result.rowCount === 0) {
-            return res.status(404).json({ error: 'Atribuição não encontrada.' });
+            return void res.status(404).json({ error: 'Atribuição não encontrada.' });
         }
         
         res.status(200).json({ message: 'Modelo de treino removido do aluno com sucesso.' });

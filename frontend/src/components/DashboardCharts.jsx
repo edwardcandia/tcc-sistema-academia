@@ -1,4 +1,3 @@
-// frontend/src/components/DashboardCharts.jsx
 import React, { useState, useEffect } from 'react';
 import { Box, Paper, Typography, Grid, CircularProgress, Divider } from '@mui/material';
 import {
@@ -13,6 +12,7 @@ import {
 } from 'chart.js';
 import { Pie, Bar } from 'react-chartjs-2';
 import axios from 'axios';
+import { API_BASE } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { TrendingUp, DonutLarge, BarChart } from '@mui/icons-material';
 
@@ -46,9 +46,9 @@ function DashboardCharts() {
 
       try {
         const [statusRes, planosRes, pagamentosRes] = await Promise.all([
-          axios.get('http://localhost:3001/api/dashboard/status-alunos', authHeader()),
-          axios.get('http://localhost:3001/api/dashboard/distribuicao-planos', authHeader()),
-          axios.get('http://localhost:3001/api/dashboard/historico-pagamentos', authHeader())
+          axios.get(`${API_BASE}/dashboard/status-alunos`, authHeader()),
+          axios.get(`${API_BASE}/dashboard/distribuicao-planos`, authHeader()),
+          axios.get(`${API_BASE}/dashboard/historico-pagamentos`, authHeader())
         ]);
 
         setStatusAlunos(statusRes.data);

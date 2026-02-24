@@ -1,19 +1,11 @@
-// backend/src/controllers/notificacoesController.js
-import db from "../config/database";
-import { ApiError, ErrorTypes, asyncHandler  } from "../utils/errorHandler";
+import { Request, Response } from 'express';
+import db from '../config/database';
+import { ApiError, ErrorTypes, asyncHandler } from '../utils/errorHandler';
 
-// Obter notificações do aluno
-exports.obterNotificacoes = asyncHandler(async (req, res) => {
-    const { aluno_id } = req.params;
-    
-    if (!aluno_id) {
-        throw new ApiError(
-            ErrorTypes.VALIDATION_ERROR.code,
-            'ID do aluno não fornecido na requisição'
-        );
-    }
-    
-    const notificacoes = await db.query(
+export const obterNotificacoes = asyncHandler(async (req: Request, res: Response) => {
+  const { aluno_id } = req.params;
+
+  const notificacoes = await db.query(
         `SELECT id, texto, tipo, lida, created_at
          FROM notificacoes
          WHERE aluno_id = $1
@@ -21,14 +13,10 @@ exports.obterNotificacoes = asyncHandler(async (req, res) => {
         [aluno_id]
     );
 
-    res.status(200).json({
-        success: true,
-        data: notificacoes.rows
-    });
+  res.status(200).json({ success: true, data: notificacoes.rows });
 });
 
-// Marcar notificação como lida
-exports.marcarComoLida = asyncHandler(async (req, res) => {
+export const marcarComoLida = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { aluno_id } = req.body;
 
@@ -58,36 +46,18 @@ exports.marcarComoLida = asyncHandler(async (req, res) => {
         [id]
     );
 
-    res.status(200).json({
-        success: true,
-        message: 'Notificação marcada como lida com sucesso'
-    });
+  res.status(200).json({ success: true, message: 'Notificação marcada como lida' });
 });
 
-// Marcar todas as notificações como lidas
-exports.marcarTodasComoLidas = asyncHandler(async (req, res) => {
-    const { aluno_id } = req.params;
+export const marcarTodasComoLidas = asyncHandler(async (req: Request, res: Response) => {
+  const { aluno_id } = req.params;
 
-    if (!aluno_id) {
-        throw new ApiError(
-            ErrorTypes.VALIDATION_ERROR.code,
-            'ID do aluno não fornecido na requisição'
-        );
-    }
+  await db.query('UPDATE notificacoes SET lida = TRUE WHERE aluno_id = $1', [aluno_id]);
 
-    await db.query(
-        'UPDATE notificacoes SET lida = TRUE WHERE aluno_id = $1',
-        [aluno_id]
-    );
-
-    res.status(200).json({
-        success: true,
-        message: 'Todas as notificações foram marcadas como lidas com sucesso'
-    });
+  res.status(200).json({ success: true, message: 'Todas as notificações foram marcadas como lidas' });
 });
 
-// Excluir uma notificação
-exports.excluirNotificacao = asyncHandler(async (req, res) => {
+export const excluirNotificacao = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { aluno_id } = req.body;
 
@@ -116,14 +86,11 @@ exports.excluirNotificacao = asyncHandler(async (req, res) => {
         [id]
     );
 
-    res.status(200).json({
-        success: true,
-        message: 'Notificação excluída com sucesso'
-    });
+  res.status(200).json({ success: true, message: 'Notificação excluída com sucesso' });
 });
 
-// Criar notificação (para uso interno)
-exports.criarNotificacao = async (aluno_id, texto, tipo = 'info') => {
+// Função interna usada por outros controllers (não é rota HTTP)
+export const criarNotificacaoInterna = async (aluno_id: number, texto: string, tipo = 'info'): Promise<boolean> => {
     try {
         await db.query(
             'INSERT INTO notificacoes (aluno_id, texto, tipo) VALUES ($1, $2, $3)',
@@ -136,8 +103,7 @@ exports.criarNotificacao = async (aluno_id, texto, tipo = 'info') => {
     }
 };
 
-// Criar notificação para um aluno (pelos administradores/atendentes)
-exports.criarNotificacao = asyncHandler(async (req, res) => {
+export const criarNotificacao = asyncHandler(async (req: Request, res: Response) => {
     const { aluno_id, texto, tipo } = req.body;
 
     if (!aluno_id || !texto) {
@@ -167,9 +133,5 @@ exports.criarNotificacao = asyncHandler(async (req, res) => {
         [aluno_id, texto, tipo || 'informacao']
     );
 
-    res.status(201).json({
-        success: true,
-        message: 'Notificação criada com sucesso',
-        data: notificacao.rows[0]
-    });
+  res.status(201).json({ success: true, message: 'Notificação criada com sucesso', data: notificacao.rows[0] });
 });

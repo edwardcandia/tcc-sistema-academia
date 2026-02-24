@@ -1,9 +1,9 @@
-// frontend/src/components/PlanosForm.jsx
 import React, { useState } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { TextField, Button, Box, Typography } from '@mui/material';
-import { useAuth } from '../context/AuthContext'; // 1. Importar o hook de autenticação
+import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../services/api';
 
 function PlanosForm({ onPlanoAdicionado }) {
   const { authHeader } = useAuth(); // 2. Obter a função que retorna o header com o token
@@ -20,7 +20,7 @@ function PlanosForm({ onPlanoAdicionado }) {
     try {
       const novoPlano = { nome, valor: parseFloat(valor), descricao };
       // 3. Adicionar o authHeader() na requisição POST
-      await axios.post('http://localhost:3001/api/planos', novoPlano, authHeader());
+      await axios.post(`${API_BASE}/planos`, novoPlano, authHeader());
       toast.success('Plano cadastrado com sucesso!');
       setNome('');
       setValor('');

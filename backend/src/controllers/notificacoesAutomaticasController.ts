@@ -1,16 +1,16 @@
-// backend/src/controllers/notificacoesAutomaticasController.js
-import conn from "../config/database";
-import emailService from "../services/emailService";
-const notificacoesController: any = require('./notificacoesController');
+﻿import { Request, Response } from 'express';
+import db from '../config/database';
+import emailService from '../services/emailService';
+import { criarNotificacaoInterna } from './notificacoesController';
 
 /**
  * Verifica e envia lembretes de pagamentos próximos do vencimento
  * Essa função deve ser executada diariamente através de um agendador
  */
-exports.enviarLembretesPagamento = async (req, res) => {
+export const enviarLembretesPagamento = async (req: Request, res: Response): Promise<void> => {
     try {
         // Buscar pagamentos que vencem nos próximos 3 dias e que ainda não foram notificados
-        const pagamentosPendentes = await conn.query(`
+        const pagamentosPendentes = await db.query(`
             SELECT p.id, p.aluno_id, p.data_vencimento, p.valor, 
                    a.nome_completo, a.email
             FROM pagamentos p
@@ -24,9 +24,6 @@ exports.enviarLembretesPagamento = async (req, res) => {
                 )
         `);
 
-        console.log(`Encontrados ${pagamentosPendentes.rows.length} pagamentos pendentes para enviar lembretes`);
-        
-        // Contador de e-mails enviados com sucesso
         let sucessos = 0;
 
         // Para cada pagamento pendente, enviar um e-mail de lembrete
@@ -52,7 +49,7 @@ exports.enviarLembretesPagamento = async (req, res) => {
                 const dataVencimento = new Date(pagamento.data_vencimento).toLocaleDateString('pt-BR');
                 
                 // Criar notificação no sistema
-                await notificacoesController.criarNotificacao(
+                await criarNotificacaoInterna(
                     pagamento.aluno_id,
                     `Lembrete: Você tem um pagamento de R$ ${parseFloat(pagamento.valor).toFixed(2)} com vencimento em ${dataVencimento}. ID: ${pagamento.id}`,
                     'alerta'
@@ -61,13 +58,13 @@ exports.enviarLembretesPagamento = async (req, res) => {
         }
 
         // Retornar resultado
-        return res.status(200).json({
+        return void res.status(200).json({
             success: true,
             mensagem: `Lembretes de pagamento processados. ${sucessos} de ${pagamentosPendentes.rows.length} enviados com sucesso.`
         });
     } catch (error) {
         console.error('Erro ao enviar lembretes de pagamento:', error);
-        return res.status(500).json({
+        return void res.status(500).json({
             success: false,
             mensagem: 'Erro ao processar lembretes de pagamento'
         });
@@ -78,10 +75,10 @@ exports.enviarLembretesPagamento = async (req, res) => {
  * Verifica e envia lembretes de treinos agendados para hoje
  * Essa função deve ser executada diariamente através de um agendador
  */
-exports.enviarLembretesTreino = async (req, res) => {
+export const enviarLembretesTreino = async (req: Request, res: Response): Promise<void> => {
     try {
         // Buscar treinos agendados para hoje
-        const treinosHoje = await conn.query(`
+        const treinosHoje = await db.query(`
             SELECT amt.id, amt.aluno_id, amt.modelo_treino_id,
                    mt.nome, mt.descricao, mt.nivel_dificuldade, mt.objetivo,
                    a.nome_completo, a.email
@@ -102,9 +99,6 @@ exports.enviarLembretesTreino = async (req, res) => {
                 )
         `);
 
-        console.log(`Encontrados ${treinosHoje.rows.length} treinos para hoje para enviar lembretes`);
-        
-        // Contador de e-mails enviados com sucesso
         let sucessos = 0;
 
         // Para cada treino agendado, enviar um e-mail de lembrete
@@ -129,7 +123,7 @@ exports.enviarLembretesTreino = async (req, res) => {
                 sucessos++;
                 
                 // Criar notificação no sistema
-                await notificacoesController.criarNotificacao(
+                await criarNotificacaoInterna(
                     treino.aluno_id,
                     `Lembrete: Você tem o treino "${treino.nome}" agendado para hoje. Não se esqueça de registrar após concluí-lo!`,
                     'info'
@@ -138,26 +132,25 @@ exports.enviarLembretesTreino = async (req, res) => {
         }
 
         // Retornar resultado
-        return res.status(200).json({
+        return void res.status(200).json({
             success: true,
             mensagem: `Lembretes de treino processados. ${sucessos} de ${treinosHoje.rows.length} enviados com sucesso.`
         });
     } catch (error) {
         console.error('Erro ao enviar lembretes de treino:', error);
-        return res.status(500).json({
+        return void res.status(500).json({
             success: false,
             mensagem: 'Erro ao processar lembretes de treino'
         });
     }
 };
 
-// Função para testar o envio de e-mail diretamente
-exports.testarEmail = async (req, res) => {
+export const testarEmail = async (req: Request, res: Response): Promise<void> => {
     try {
         const { destinatario, assunto, mensagem } = req.body;
         
         if (!destinatario || !assunto || !mensagem) {
-            return res.status(400).json({
+            return void res.status(400).json({
                 success: false,
                 mensagem: 'Destinatário, assunto e mensagem são obrigatórios'
             });
@@ -170,13 +163,13 @@ exports.testarEmail = async (req, res) => {
         );
         
         if (resultado.success) {
-            return res.status(200).json({
+            return void res.status(200).json({
                 success: true,
                 mensagem: `E-mail enviado com sucesso para ${destinatario}`,
                 messageId: resultado.messageId
             });
         } else {
-            return res.status(500).json({
+            return void res.status(500).json({
                 success: false,
                 mensagem: 'Erro ao enviar e-mail',
                 erro: resultado.error
@@ -184,7 +177,7 @@ exports.testarEmail = async (req, res) => {
         }
     } catch (error) {
         console.error('Erro ao testar envio de e-mail:', error);
-        return res.status(500).json({
+        return void res.status(500).json({
             success: false,
             mensagem: 'Erro ao testar envio de e-mail'
         });

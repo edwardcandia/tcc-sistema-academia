@@ -1,4 +1,3 @@
-// frontend/src/pages/AlunosPage.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +8,7 @@ import {
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import AlunosForm from '../components/AlunosForm';
 import AlunosList from '../components/AlunosList';
+import { API_BASE } from '../services/api';
 
 function AlunosPage() {
   const [planos, setPlanos] = useState([]);
@@ -19,7 +19,7 @@ function AlunosPage() {
 
   const fetchPlanos = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/planos', authHeader());
+      const response = await axios.get(`${API_BASE}/planos`, authHeader());
       setPlanos(response.data);
     } catch (error) {
       console.error('Erro ao buscar planos:', error);
@@ -28,7 +28,7 @@ function AlunosPage() {
 
   const fetchAlunos = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/alunos', authHeader());
+      const response = await axios.get(`${API_BASE}/alunos`, authHeader());
       setAlunos(response.data);
     } catch (error) {
       console.error('Erro ao buscar alunos:', error);

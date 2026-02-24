@@ -1,14 +1,12 @@
-// backend/src/routes/pagamentosRoutes.js
+// backend/src/routes/pagamentosRoutes.ts
 import express from "express";
+import { authenticateUser } from "../middleware/auth";
+import * as pagamentosController from "../controllers/pagamentosController";
+
 const router = express.Router();
-const pagamentosController: any = require('../controllers/pagamentosController');
-import verifyToken from "../middleware/verifyToken";
 
-router.post('/alunos/:id/pagamentos', verifyToken, pagamentosController.registrarPagamento);
-router.get('/alunos/:id/pagamentos', verifyToken, pagamentosController.getPagamentosPorAluno);
-
-// --- NOVA ROTA ---
-// Note que a rota é /pagamentos/:id (ID do pagamento), e não do aluno
-router.delete('/pagamentos/:id', verifyToken, pagamentosController.deletePagamento);
+router.post('/alunos/:id/pagamentos', authenticateUser, pagamentosController.registrarPagamento);
+router.get('/alunos/:id/pagamentos', authenticateUser, pagamentosController.getPagamentosPorAluno);
+router.delete('/pagamentos/:id', authenticateUser, pagamentosController.deletePagamento);
 
 export default router;

@@ -1,28 +1,8 @@
-// frontend/src/context/AuthContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const AuthContext = createContext(null);
-const API_URL = 'http://localhost:3001/api';
-
-// Função para configurar interceptor do Axios para tratar tokens expirados
-const setupAxiosInterceptors = (logout) => {
-  axios.interceptors.response.use(
-    response => response,
-    error => {
-      // Se o erro é 401 (Não autorizado), pode ser token expirado
-      if (error.response && error.response.status === 401) {
-        // Logout automático apenas se o erro for de token inválido ou expirado
-        if (error.response.data && 
-            (error.response.data.error === 'Token inválido ou expirado.' || 
-             error.response.data.error === 'Token não fornecido.')) {
-          logout();
-        }
-      }
-      return Promise.reject(error);
-    }
-  );
-};
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -30,110 +10,92 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Efeito para verificar a autenticação ao carregar a página
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      setLoading(true);
-      
-      // Carregar dados do localStorage ao inicializar
-      const storedToken = localStorage.getItem('token');
-      const storedUser = localStorage.getItem('user');
-      const storedAluno = localStorage.getItem('aluno');
-      
-      if (storedToken) {
-        setToken(storedToken);
-        
-        try {
-          // Verificar se o token ainda é válido fazendo uma requisição para o servidor
-          const response = await axios.get(`${API_URL}/auth/verify-token`, {
-            headers: { Authorization: `Bearer ${storedToken}` }
-          });
-          
-          if (response.data.valid) {
-            if (storedUser) {
-              setUser(JSON.parse(storedUser));
-            } else if (storedAluno) {
-              setAluno(JSON.parse(storedAluno));
-            }
-          } else {
-            // Se o token não for válido, fazer logout
-            logout();
-          }
-        } catch (error) {
-          console.warn('Erro ao verificar token, mantendo dados de autenticação:', error);
-          // Mesmo com erro, manteremos os dados locais para evitar logout desnecessário
-          if (storedUser) {
-            setUser(JSON.parse(storedUser));
-          } else if (storedAluno) {
-            setAluno(JSON.parse(storedAluno));
-          }
-        }
-      }
-      
-      setLoading(false);
-    };
-    
-    checkAuthStatus();
-  }, []);
-  
-  // Configurar o interceptor do Axios para tratar tokens expirados
-  useEffect(() => {
-    setupAxiosInterceptors(logout);
-  }, []);
-
-  // --- FUNÇÃO DE LOGIN ATUALIZADA ---
-  const login = async (email, senha, tipo) => {
-    try {
-      // Sempre chama a mesma rota unificada
-      console.log(`Tentando login com email: ${email}, tipo: ${tipo || 'não especificado'}`);
-      const response = await axios.post(`${API_URL}/login`, { email, senha });
-      
-      const { token, user: userData, aluno: alunoData } = response.data;
-
-      localStorage.setItem('token', token);
-      setToken(token);
-
-      // Verifica o que o backend retornou para saber quem logou
-      if (alunoData) {
-        console.log('Login como aluno bem-sucedido:', alunoData);
-        localStorage.setItem('aluno', JSON.stringify(alunoData));
-        setAluno(alunoData);
-        setUser(null);
-        localStorage.removeItem('user');
-        return 'aluno'; // Retorna o tipo de usuário logado
-      } else {
-        console.log('Login como funcionário bem-sucedido:', userData);
-        localStorage.setItem('user', JSON.stringify(userData));
-        setUser(userData);
-        setAluno(null);
-        localStorage.removeItem('aluno');
-        return 'user'; // Retorna o tipo de usuário logado
-      }
-    } catch (error) {
-      console.error('Erro ao fazer login:', error);
-      throw error;
-    }
-  };
-
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     localStorage.removeItem('aluno');
     setToken(null);
     setUser(null);
     setAluno(null);
-  };
-  const authHeader = () => {
-    // Verificar se o token existe antes de retornar o cabeçalho
-    if (!token) {
-      console.warn('Tentando usar authHeader, mas o token não existe');
-      return {};
+  }, []);
+
+  // Restore session from localStorage and validate token with server
+  useEffect(() => {
+    const restoreSession = async () => {
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data } = await axios.get(`${API_URL}/auth/verify-token`, {
+          headers: { Authorization: `Bearer ${storedToken}` }
+        });
+
+        if (data.valid) {
+          setToken(storedToken);
+          const storedUser = localStorage.getItem('user');
+          const storedAluno = localStorage.getItem('aluno');
+          if (storedUser) setUser(JSON.parse(storedUser));
+          else if (storedAluno) setAluno(JSON.parse(storedAluno));
+        } else {
+          logout();
+        }
+      } catch {
+        // Network error: keep local session to avoid unnecessary logouts
+        const storedUser = localStorage.getItem('user');
+        const storedAluno = localStorage.getItem('aluno');
+        setToken(storedToken);
+        if (storedUser) setUser(JSON.parse(storedUser));
+        else if (storedAluno) setAluno(JSON.parse(storedAluno));
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    restoreSession();
+  }, [logout]);
+
+  // Auto-logout on 401 responses with token error messages
+  useEffect(() => {
+    const interceptorId = axios.interceptors.response.use(
+      response => response,
+      error => {
+        const msg = error.response?.data?.error || error.response?.data?.message || '';
+        if (error.response?.status === 401 && (msg.includes('Token') || msg.includes('token'))) {
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptorId);
+  }, [logout]);
+
+  const login = async (email, senha) => {
+    const { data } = await axios.post(`${API_URL}/login`, { email, senha });
+    const { token: newToken, user: userData, aluno: alunoData } = data;
+
+    localStorage.setItem('token', newToken);
+    setToken(newToken);
+
+    if (alunoData) {
+      localStorage.setItem('aluno', JSON.stringify(alunoData));
+      setAluno(alunoData);
+      setUser(null);
+      localStorage.removeItem('user');
+      return 'aluno';
     }
-    console.log('authHeader gerando cabeçalho com token:', token.substring(0, 15) + '...');
-    const headers = { Authorization: `Bearer ${token}` };
-    console.log('Cabeçalho gerado:', headers);
-    return { headers };
+
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
+    setAluno(null);
+    localStorage.removeItem('aluno');
+    return 'user';
   };
+
+  const authHeader = () =>
+    token ? { headers: { Authorization: `Bearer ${token}` } } : {};
 
   return (
     <AuthContext.Provider value={{ user, aluno, token, login, logout, authHeader, loading }}>

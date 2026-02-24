@@ -1,20 +1,19 @@
-// backend/src/controllers/feedbackController.js
-import conn from "../config/database";
-const notificacoesController: any = require('./notificacoesController');
+﻿import { Request, Response } from 'express';
+import db from '../config/database';
+import { criarNotificacaoInterna } from './notificacoesController';
 
-// Criar um novo feedback pelo aluno
-exports.criarFeedback = async (req, res) => {
+export const criarFeedback = async (req: Request, res: Response): Promise<void> => {
     try {
         const { titulo, descricao, tipo, avaliacao, aluno_id } = req.body;
 
         if (!titulo || !descricao || !tipo || !avaliacao || !aluno_id) {
-            return res.status(400).json({
+            return void res.status(400).json({
                 success: false,
                 message: 'Dados incompletos. Título, descrição, tipo, avaliação e ID do aluno são obrigatórios'
             });
         }
 
-        const feedback = await conn.query(
+        const feedback = await db.query(
             `INSERT INTO feedbacks 
                 (aluno_id, titulo, descricao, tipo, avaliacao) 
              VALUES ($1, $2, $3, $4, $5) RETURNING id`,
@@ -38,22 +37,19 @@ exports.criarFeedback = async (req, res) => {
     }
 };
 
-// Obter feedbacks do aluno pelo ID
-exports.obterFeedbacksAluno = async (req, res) => {
+export const obterFeedbacksAluno = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { aluno_id } = req.query;
+        const { aluno_id } = req.params;
         
         if (!aluno_id) {
-            return res.status(400).json({
+            return void res.status(400).json({
                 success: false,
                 message: 'ID do aluno é obrigatório'
             });
         }
         
-        const feedbacks = await conn.query(
-            `SELECT 
-                id, titulo, descricao, tipo, avaliacao, status, 
-                created_at, updated_at, resposta
+        const feedbacks = await db.query(
+            `SELECT id, titulo, descricao, tipo, avaliacao, status, resposta, created_at, updated_at
              FROM feedbacks
              WHERE aluno_id = $1
              ORDER BY created_at DESC`,
@@ -73,8 +69,7 @@ exports.obterFeedbacksAluno = async (req, res) => {
     }
 };
 
-// Listar todos os feedbacks (para administradores)
-exports.listarTodosFeedbacks = async (req, res) => {
+export const listarTodosFeedbacks = async (req: Request, res: Response): Promise<void> => {
     try {
         // Parâmetros de filtro opcionais
         const { status, tipo } = req.query;
@@ -108,7 +103,7 @@ exports.listarTodosFeedbacks = async (req, res) => {
         
         query += ` ORDER BY f.created_at DESC`;
         
-        const feedbacks = await conn.query(query, valores);
+        const feedbacks = await db.query(query, valores);
 
         res.status(200).json({
             success: true,
@@ -123,81 +118,66 @@ exports.listarTodosFeedbacks = async (req, res) => {
     }
 };
 
-// Responder um feedback (por administrador)
-exports.responderFeedback = async (req, res) => {
+export const responderFeedback = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
         const { resposta } = req.body;
-        const usuario_id = req.userId;
+        const usuario_id = req.user?.id;
 
         if (!resposta) {
-            return res.status(400).json({
+            return void res.status(400).json({
                 success: false,
                 message: 'A resposta é obrigatória'
             });
         }
 
         // Verificar se o feedback existe
-        const feedbackCheck = await conn.query(
+        const feedbackCheck = await db.query(
             'SELECT aluno_id FROM feedbacks WHERE id = $1',
             [id]
         );
 
         if (feedbackCheck.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Feedback não encontrado'
-            });
+            res.status(404).json({ success: false, message: 'Feedback não encontrado' });
+            return;
         }
 
-        // Atualizar o feedback com a resposta
-        await conn.query(
+        await db.query(
             `UPDATE feedbacks 
              SET resposta = $1, status = 'respondido', respondido_por = $2, updated_at = CURRENT_TIMESTAMP
              WHERE id = $3`,
             [resposta, usuario_id, id]
         );
 
-        // Criar notificação para o aluno sobre a resposta
-        await notificacoesController.criarNotificacao(
+        await criarNotificacaoInterna(
             feedbackCheck.rows[0].aluno_id,
             'Seu feedback recebeu uma resposta! Confira em seu histórico de feedbacks.',
             'info'
         );
 
-        res.status(200).json({
-            success: true,
-            message: 'Feedback respondido com sucesso'
-        });
+        res.status(200).json({ success: true, message: 'Feedback respondido com sucesso' });
     } catch (error) {
         console.error('Erro ao responder feedback:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erro interno do servidor ao responder feedback'
-        });
+        res.status(500).json({ success: false, message: 'Erro interno ao responder feedback' });
     }
 };
 
-// Arquivar um feedback (por administrador)
-exports.arquivarFeedback = async (req, res) => {
+export const arquivarFeedback = async (req: Request, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
 
         // Verificar se o feedback existe
-        const feedbackCheck = await conn.query(
+        const feedbackCheck = await db.query(
             'SELECT id FROM feedbacks WHERE id = $1',
             [id]
         );
 
         if (feedbackCheck.rows.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Feedback não encontrado'
-            });
+            res.status(404).json({ success: false, message: 'Feedback não encontrado' });
+            return;
         }
 
-        // Arquivar o feedback
-        await conn.query(
+        await db.query(
             "UPDATE feedbacks SET status = 'arquivado', updated_at = CURRENT_TIMESTAMP WHERE id = $1",
             [id]
         );
@@ -215,42 +195,15 @@ exports.arquivarFeedback = async (req, res) => {
     }
 };
 
-// Obter estatísticas dos feedbacks (para administradores)
-exports.obterEstatisticasFeedback = async (req, res) => {
+export const obterEstatisticasFeedback = async (req: Request, res: Response): Promise<void> => {
     try {
-        // Total por status
-        const totalPorStatus = await conn.query(`
-            SELECT status, COUNT(*) as total
-            FROM feedbacks
-            GROUP BY status
-        `);
-        
-        // Total por tipo
-        const totalPorTipo = await conn.query(`
-            SELECT tipo, COUNT(*) as total
-            FROM feedbacks
-            GROUP BY tipo
-        `);
-        
-        // Média de avaliações
-        const mediaAvaliacoes = await conn.query(`
-            SELECT AVG(avaliacao) as media
-            FROM feedbacks
-        `);
-        
-        // Feedbacks recentes (últimos 7 dias)
-        const feedbacksRecentes = await conn.query(`
-            SELECT COUNT(*) as total
-            FROM feedbacks
-            WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'
-        `);
-        
-        // Feedbacks sem resposta
-        const feedbacksSemResposta = await conn.query(`
-            SELECT COUNT(*) as total
-            FROM feedbacks
-            WHERE status = 'pendente'
-        `);
+        const [totalPorStatus, totalPorTipo, mediaAvaliacoes, feedbacksRecentes, feedbacksSemResposta] = await Promise.all([
+            db.query(`SELECT status, COUNT(*) as total FROM feedbacks GROUP BY status`),
+            db.query(`SELECT tipo, COUNT(*) as total FROM feedbacks GROUP BY tipo`),
+            db.query(`SELECT AVG(avaliacao) as media FROM feedbacks`),
+            db.query(`SELECT COUNT(*) as total FROM feedbacks WHERE created_at >= CURRENT_DATE - INTERVAL '7 days'`),
+            db.query(`SELECT COUNT(*) as total FROM feedbacks WHERE status = 'pendente'`),
+        ]);
 
         res.status(200).json({
             success: true,

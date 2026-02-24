@@ -1,11 +1,15 @@
 -- Apaga as tabelas se elas já existirem, para podermos rodar o script várias vezes sem erro.
-DROP TABLE IF EXISTS itens_treino;
-DROP TABLE IF EXISTS modelos_treino;
-DROP TABLE IF EXISTS pagamentos;
-DROP TABLE IF EXISTS alunos;
-DROP TABLE IF EXISTS exercicios;
-DROP TABLE IF EXISTS planos;
-DROP TABLE IF EXISTS usuarios;
+DROP TABLE IF EXISTS alunos_modelos_treino CASCADE;
+DROP TABLE IF EXISTS registros_treino CASCADE;
+DROP TABLE IF EXISTS notificacoes CASCADE;
+DROP TABLE IF EXISTS feedbacks CASCADE;
+DROP TABLE IF EXISTS itens_treino CASCADE;
+DROP TABLE IF EXISTS modelos_treino CASCADE;
+DROP TABLE IF EXISTS pagamentos CASCADE;
+DROP TABLE IF EXISTS alunos CASCADE;
+DROP TABLE IF EXISTS exercicios CASCADE;
+DROP TABLE IF EXISTS planos CASCADE;
+DROP TABLE IF EXISTS usuarios CASCADE;
 
 -- Tabela para os planos da academia
 CREATE TABLE planos (
@@ -35,6 +39,8 @@ CREATE TABLE alunos (
     data_matricula DATE NOT NULL DEFAULT CURRENT_DATE,
     status VARCHAR(20) NOT NULL DEFAULT 'ativo',
     plano_id INTEGER,
+    proximo_vencimento DATE,
+    senha_hash VARCHAR(255),
     CONSTRAINT fk_plano FOREIGN KEY (plano_id) REFERENCES planos(id)
 );
 
@@ -60,9 +66,10 @@ CREATE TABLE exercicios (
     data_criacao TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Inserir dados iniciais para teste
+-- Plano padrão de exemplo
 INSERT INTO planos (nome, valor, descricao) VALUES ('Plano Musculação Mensal', 99.90, 'Acesso ilimitado à área de musculação.');
-INSERT INTO usuarios (nome, email, senha_hash, cargo) VALUES ('Admin', 'admin@academia.com', 'hash_da_senha_aqui', 'administrador');
+
+-- O usuário admin é criado com senha hasheada via: node backend/scripts/seed.js
 
 -- Tabela para modelos de treino
 CREATE TABLE modelos_treino (

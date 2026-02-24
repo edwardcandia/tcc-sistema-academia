@@ -1,9 +1,10 @@
-// backend/src/routes/registroTreinoRoutes.js
+// backend/src/routes/registroTreinoRoutes.ts
 import express from "express";
+import * as registroTreinoController from "../controllers/registroTreinoController";
+import { validate, schemas } from "../utils/validator";
+import { authenticateUser, authorizeRoles } from "../middleware/auth";
+
 const router = express.Router();
-const registroTreinoController: any = require('../controllers/registroTreinoController');
-import { validate, schemas  } from "../utils/validator";
-import { authenticateUser, authorizeRoles  } from "../middleware/auth";
 
 /**
  * @swagger

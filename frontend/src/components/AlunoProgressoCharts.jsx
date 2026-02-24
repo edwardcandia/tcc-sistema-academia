@@ -18,6 +18,7 @@ import { useAuth } from '../context/AuthContext';
 import { TrendingUp, Timeline, FitnessCenter, CalendarMonth } from '@mui/icons-material';
 import { format, parseISO, subDays, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { API_BASE } from '../services/api';
 
 // Registrando componentes do Chart.js
 ChartJS.register(
@@ -50,7 +51,7 @@ const AlunoProgressoCharts = () => {
       try {
         // Buscar estatísticas gerais
         const estatisticasRes = await axios.get(
-          'http://localhost:3001/api/registro-treino/estatisticas', 
+          `${API_BASE}/registro-treino/estatisticas`, 
           authHeader()
         );
         setEstatisticas(estatisticasRes.data.data);
@@ -61,14 +62,14 @@ const AlunoProgressoCharts = () => {
         const dataFim = format(hoje, 'yyyy-MM-dd');
         
         const frequenciaRes = await axios.get(
-          `http://localhost:3001/api/registro-treino/frequencia?dataInicio=${dataInicio}&dataFim=${dataFim}`,
+          `${API_BASE}/registro-treino/frequencia?dataInicio=${dataInicio}&dataFim=${dataFim}`,
           authHeader()
         );
         setFrequenciaSemanal(frequenciaRes.data.data);
         
         // Buscar dados para gráfico de avaliação dos treinos
         const avaliacoesRes = await axios.get(
-          'http://localhost:3001/api/registro-treino/avaliacoes',
+          `${API_BASE}/registro-treino/avaliacoes`,
           authHeader()
         );
         setAvaliacoesTreino(avaliacoesRes.data.data);

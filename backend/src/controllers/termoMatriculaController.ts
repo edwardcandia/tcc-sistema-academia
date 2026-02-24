@@ -40,26 +40,14 @@ export const upload = multer({
 });
 
 // Controller methods
-export const getTermoModelos = async (req: Request, res: Response): Promise<void> => {
+export const getTermoModelos = async (_req: Request, res: Response): Promise<void> => {
   try {
-    console.log('Tentando buscar modelos de termo');
-    // Verificar tabelas existentes
-    const tables = await db.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public'
-      AND table_name LIKE '%termo%' OR table_name LIKE '%aluno%';
-    `);
-    console.log('Tabelas encontradas:', tables.rows.map((r: any) => r.table_name));
-    
     const result = await db.query(
       'SELECT * FROM termo_matricula_modelos ORDER BY ativo DESC, data_criacao DESC'
     );
-    console.log('Modelos encontrados:', result.rows.length);
     res.status(200).json(result.rows);
   } catch (error) {
-    console.error('Erro ao buscar modelos de termo:', error instanceof Error ? error.message : 'Erro desconhecido');
-    console.error('Stack trace:', error instanceof Error ? error.stack : '');
+    console.error('Erro ao buscar modelos de termo:', error);
     res.status(500).json({ error: 'Erro ao buscar os modelos de termo de matrícula.' });
   }
 };
@@ -221,22 +209,6 @@ export const getTermosAluno = async (req: Request, res: Response): Promise<void>
   const { alunoId } = req.params;
   
   try {
-    console.log(`Tentando buscar termos para o aluno ID: ${alunoId}`);
-    
-    // Verificar se a tabela existe
-    const checkTable = await db.query(`
-      SELECT EXISTS (
-        SELECT FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        AND table_name = 'alunos_termos_matricula'
-      );
-    `);
-    console.log('Tabela alunos_termos_matricula existe?', checkTable.rows[0].exists);
-    
-    if (!checkTable.rows[0].exists) {
-      throw new Error('A tabela alunos_termos_matricula não existe no banco de dados!');
-    }
-    
     // Check if student exists
     const alunoResult = await db.query(
       'SELECT * FROM alunos WHERE id = $1',
@@ -269,18 +241,6 @@ export const uploadTermoAluno = async (req: Request, res: Response): Promise<voi
   const { alunoId } = req.params;
   const { descricao, tipo } = req.body;
   const usuario_id = req.user?.id;
-  
-  console.log("Upload request received:", { 
-    alunoId, 
-    descricao, 
-    tipo,
-    file: req.file ? {
-      filename: req.file.filename,
-      originalname: req.file.originalname,
-      mimetype: req.file.mimetype,
-      path: req.file.path
-    } : "No file uploaded"
-  });
   
   if (!req.file) {
     res.status(400).json({ error: 'Nenhum arquivo foi enviado.' });

@@ -1,4 +1,3 @@
-// frontend/src/pages/AlunoTreinoDetalhePage.jsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -34,10 +33,10 @@ function AlunoTreinoDetalhePage() {
         const fetchTreinoDetalhes = async () => {
             try {
                 setLoading(true);
-                const responseTreino = await axios.get(`http://localhost:3001/api/modelos-treino/${id}`, authHeader());
+                const responseTreino = await axios.get(`${API_BASE}/modelos-treino/${id}`, authHeader());
                 setTreino(responseTreino.data);
                 
-                const responseExercicios = await axios.get(`http://localhost:3001/api/modelos-treino/${id}/exercicios`, authHeader());
+                const responseExercicios = await axios.get(`${API_BASE}/modelos-treino/${id}/exercicios`, authHeader());
                 setExercicios(responseExercicios.data);
             } catch (error) {
                 console.error("Erro ao buscar detalhes do treino:", error);
@@ -121,7 +120,7 @@ function AlunoTreinoDetalhePage() {
             };
             
             const response = await axios.post(
-                'http://localhost:3001/api/registro-treino/registrar', 
+                `${API_BASE}/registro-treino/registrar`, 
                 data, 
                 authHeader()
             );

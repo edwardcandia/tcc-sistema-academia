@@ -10,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
+import { API_BASE } from '../services/api';
 
 const AlunoFeedbackForm = () => {
     const { authHeader } = useAuth();
@@ -34,7 +35,7 @@ const AlunoFeedbackForm = () => {
             setLoadingFeedbacks(true);
             
             try {
-                const response = await axios.get('http://localhost:3001/api/feedback/aluno/meus', authHeader());
+                const response = await axios.get(`${API_BASE}/feedback/aluno/meus`, authHeader());
                 setFeedbacks(response.data.data);
             } catch (error) {
                 console.error('Erro ao buscar feedbacks:', error);
@@ -69,7 +70,7 @@ const AlunoFeedbackForm = () => {
         setLoading(true);
         try {
             await axios.post(
-                'http://localhost:3001/api/feedback/aluno/novo',
+                `${API_BASE}/feedback/aluno/novo`,
                 feedback,
                 authHeader()
             );

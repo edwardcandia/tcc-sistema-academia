@@ -1,6 +1,75 @@
-import db from "../config/database";
-const getPlanos = async (req, res) => { try { const result = await db.query('SELECT * FROM planos ORDER BY id ASC'); res.status(200).json(result.rows); } catch (error) { res.status(500).json({ error: 'Erro ao buscar os planos.' }); }};
-const createPlano = async (req, res) => { const { nome, valor, descricao } = req.body; if (!nome || !valor) { return res.status(400).json({ error: 'Nome e valor são obrigatórios.' }); } try { const result = await db.query('INSERT INTO planos (nome, valor, descricao) VALUES ($1, $2, $3) RETURNING *', [nome, valor, descricao]); res.status(201).json(result.rows[0]); } catch (error) { res.status(500).json({ error: 'Erro ao criar o plano.' }); }};
-const updatePlano = async (req, res) => { const { id } = req.params; const { nome, valor, descricao } = req.body; if (!nome || !valor) { return res.status(400).json({ error: 'Nome e valor são obrigatórios.' }); } try { const result = await db.query('UPDATE planos SET nome = $1, valor = $2, descricao = $3 WHERE id = $4 RETURNING *', [nome, valor, descricao, id]); if (result.rows.length === 0) { return res.status(404).json({ error: 'Plano não encontrado.' }); } res.status(200).json(result.rows[0]); } catch (error) { res.status(500).json({ error: 'Erro ao atualizar o plano.' }); }};
-const deletePlano = async (req, res) => { const { id } = req.params; try { const alunosNoPlano = await db.query('SELECT COUNT(*) FROM alunos WHERE plano_id = $1', [id]); if (parseInt(alunosNoPlano.rows[0].count, 10) > 0) { return res.status(409).json({ error: 'Este plano não pode ser excluído pois está em uso por um ou mais alunos.' }); } const result = await db.query('DELETE FROM planos WHERE id = $1', [id]); if (result.rowCount === 0) { return res.status(404).json({ error: 'Plano não encontrado.' }); } res.status(200).json({ message: 'Plano deletado com sucesso.' }); } catch (error) { res.status(500).json({ error: 'Erro ao deletar o plano.' }); }};
+import { Request, Response } from 'express';
+import db from '../config/database';
+
+const getPlanos = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const result = await db.query('SELECT * FROM planos ORDER BY id ASC');
+    res.status(200).json(result.rows);
+  } catch (error) {
+    console.error('Erro ao buscar planos:', error);
+    res.status(500).json({ error: 'Erro ao buscar os planos.' });
+  }
+};
+
+const createPlano = async (req: Request, res: Response): Promise<void> => {
+  const { nome, valor, descricao } = req.body;
+  if (!nome || !valor) {
+    res.status(400).json({ error: 'Nome e valor são obrigatórios.' });
+    return;
+  }
+  try {
+    const result = await db.query(
+      'INSERT INTO planos (nome, valor, descricao) VALUES ($1, $2, $3) RETURNING *',
+      [nome, valor, descricao]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao criar plano:', error);
+    res.status(500).json({ error: 'Erro ao criar o plano.' });
+  }
+};
+
+const updatePlano = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  const { nome, valor, descricao } = req.body;
+  if (!nome || !valor) {
+    res.status(400).json({ error: 'Nome e valor são obrigatórios.' });
+    return;
+  }
+  try {
+    const result = await db.query(
+      'UPDATE planos SET nome = $1, valor = $2, descricao = $3 WHERE id = $4 RETURNING *',
+      [nome, valor, descricao, id]
+    );
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Plano não encontrado.' });
+      return;
+    }
+    res.status(200).json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao atualizar plano:', error);
+    res.status(500).json({ error: 'Erro ao atualizar o plano.' });
+  }
+};
+
+const deletePlano = async (req: Request, res: Response): Promise<void> => {
+  const { id } = req.params;
+  try {
+    const alunosNoPlano = await db.query('SELECT COUNT(*) FROM alunos WHERE plano_id = $1', [id]);
+    if (parseInt(alunosNoPlano.rows[0].count, 10) > 0) {
+      res.status(409).json({ error: 'Este plano não pode ser excluído pois está em uso por um ou mais alunos.' });
+      return;
+    }
+    const result = await db.query('DELETE FROM planos WHERE id = $1', [id]);
+    if (result.rowCount === 0) {
+      res.status(404).json({ error: 'Plano não encontrado.' });
+      return;
+    }
+    res.status(200).json({ message: 'Plano deletado com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao deletar plano:', error);
+    res.status(500).json({ error: 'Erro ao deletar o plano.' });
+  }
+};
+
 export { getPlanos, createPlano, updatePlano, deletePlano };

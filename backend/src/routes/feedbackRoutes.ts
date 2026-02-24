@@ -1,8 +1,9 @@
-// backend/src/routes/feedbackRoutes.js
+// backend/src/routes/feedbackRoutes.ts
 import express from "express";
+import * as feedbackController from "../controllers/feedbackController";
+import { authenticateUser, authorizeRoles } from "../middleware/auth";
+
 const router = express.Router();
-const feedbackController: any = require('../controllers/feedbackController');
-import { authenticateUser, authorizeRoles  } from "../middleware/auth";
 
 // Rotas para administradores e atendentes cadastrarem feedback em nome dos alunos
 router.post('/cadastrar', authenticateUser, feedbackController.criarFeedback);

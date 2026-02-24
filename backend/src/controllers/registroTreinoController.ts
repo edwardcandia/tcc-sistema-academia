@@ -1,9 +1,8 @@
-// backend/src/controllers/registroTreinoController.js
-import db from "../config/database";
-import { ApiError, ErrorTypes, asyncHandler  } from "../utils/errorHandler";
+﻿import { Request, Response } from 'express';
+import db from '../config/database';
+import { ApiError, ErrorTypes, asyncHandler } from '../utils/errorHandler';
 
-// Registrar a realização de um treino
-exports.registrarTreino = asyncHandler(async (req, res) => {
+export const registrarTreino = asyncHandler(async (req: Request, res: Response) => {
     const { treino_id, data, duracao, observacoes, avaliacao, aluno_id } = req.body;
     
     if (!aluno_id) {
@@ -49,8 +48,7 @@ exports.registrarTreino = asyncHandler(async (req, res) => {
     });
 });
 
-// Obter histórico de treinos realizados
-exports.obterHistoricoTreinos = asyncHandler(async (req, res) => {
+export const obterHistoricoTreinos = asyncHandler(async (req: Request, res: Response) => {
     const { aluno_id } = req.query;
     
     // Verificar se o ID do aluno está definido
@@ -59,8 +57,8 @@ exports.obterHistoricoTreinos = asyncHandler(async (req, res) => {
     }
     
     // Obter histórico de treinos com paginação
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const page = parseInt(String(req.query.page || '1')) || 1;
+    const limit = parseInt(String(req.query.limit || '10')) || 10;
     const offset = (page - 1) * limit;
     
     // Consultar total de registros para paginação
@@ -109,8 +107,7 @@ exports.obterHistoricoTreinos = asyncHandler(async (req, res) => {
     });
 });
 
-// Obter estatísticas de treinos
-exports.obterEstatisticas = asyncHandler(async (req, res) => {
+export const obterEstatisticas = asyncHandler(async (req: Request, res: Response) => {
     const { aluno_id } = req.query;
     
     // Verificar se o ID do aluno está definido
@@ -162,8 +159,7 @@ exports.obterEstatisticas = asyncHandler(async (req, res) => {
     });
 });
 
-// Obter frequência semanal de treinos
-exports.obterFrequenciaSemanal = asyncHandler(async (req, res) => {
+export const obterFrequenciaSemanal = asyncHandler(async (req: Request, res: Response) => {
     const { aluno_id } = req.query;
     
     // Verificar se o ID do aluno está definido
@@ -202,8 +198,7 @@ exports.obterFrequenciaSemanal = asyncHandler(async (req, res) => {
     });
 });
 
-// Obter avaliações médias por tipo de treino
-exports.obterAvaliacoes = asyncHandler(async (req, res) => {
+export const obterAvaliacoes = asyncHandler(async (req: Request, res: Response) => {
     const { aluno_id } = req.query;
     
     // Verificar se o ID do aluno está definido
@@ -237,14 +232,13 @@ exports.obterAvaliacoes = asyncHandler(async (req, res) => {
     });
 });
 
-// Obter histórico de treinos realizados por um aluno específico (para admin/atendentes)
-exports.obterHistoricoTreinosAluno = async (req, res) => {
+export const obterHistoricoTreinosAluno = async (req: Request, res: Response): Promise<void> => {
     try {
         const { aluno_id } = req.params;
         
         // Verificar se o ID do aluno está definido
         if (!aluno_id) {
-            return res.status(400).json({
+            return void res.status(400).json({
                 success: false,
                 message: 'ID do aluno não fornecido na requisição'
             });
@@ -253,7 +247,7 @@ exports.obterHistoricoTreinosAluno = async (req, res) => {
         // Verificar se o aluno existe
         const alunoCheck = await db.query('SELECT id FROM alunos WHERE id = $1', [aluno_id]);
         if (alunoCheck.rows.length === 0) {
-            return res.status(404).json({
+            return void res.status(404).json({
                 success: false,
                 message: 'Aluno não encontrado'
             });

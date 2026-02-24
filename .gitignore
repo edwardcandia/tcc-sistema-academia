@@ -1,9 +1,28 @@
-# Pasta de dependências do Backend
+# Dependencies
 /backend/node_modules
-# Arquivo de ambiente do Backend (com senhas)
-/backend/.env
-
-# Pasta de dependências do Frontend
 /frontend/node_modules
-# Pasta de build do Frontend
+
+# Environment files (contain secrets)
+/backend/.env
+/frontend/.env
+
+# Build output
 /frontend/dist
+/backend/dist
+
+# Logs
+/backend/logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Uploads (generated at runtime)
+/backend/uploads

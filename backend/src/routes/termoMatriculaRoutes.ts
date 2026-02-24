@@ -1,28 +1,27 @@
 // backend/src/routes/termoMatriculaRoutes.ts
 import express from 'express';
 import * as termoMatriculaController from '../controllers/termoMatriculaController';
-import verifyToken from '../middleware/verifyToken';
-import authorizeRole from '../middleware/authorizeRole';
+import { authenticateUser, authorizeRoles } from '../middleware/auth';
 
 const router = express.Router();
 
-// Middleware to check authentication for all routes
-router.use(verifyToken);
+// Autenticação obrigatória para todas as rotas
+router.use(authenticateUser);
 
-// Routes for term templates (modelos)
+// Rotas para modelos de termo
 router.get('/modelos', termoMatriculaController.getTermoModelos);
 router.get('/modelos/:id', termoMatriculaController.getTermoModeloById);
-router.post('/modelos', authorizeRole(['admin']), termoMatriculaController.createTermoModelo);
-router.put('/modelos/:id', authorizeRole(['admin']), termoMatriculaController.updateTermoModelo);
-router.delete('/modelos/:id', authorizeRole(['admin']), termoMatriculaController.deleteTermoModelo);
+router.post('/modelos', authorizeRoles(['administrador']), termoMatriculaController.createTermoModelo);
+router.put('/modelos/:id', authorizeRoles(['administrador']), termoMatriculaController.updateTermoModelo);
+router.delete('/modelos/:id', authorizeRoles(['administrador']), termoMatriculaController.deleteTermoModelo);
 
-// Routes for student terms
+// Rotas para termos de alunos
 router.get('/alunos/:alunoId/termos', termoMatriculaController.getTermosAluno);
 router.post('/alunos/:alunoId/termos/upload', termoMatriculaController.upload.single('arquivo'), termoMatriculaController.uploadTermoAluno);
 router.get('/alunos/:alunoId/termos/:termoId/download', termoMatriculaController.downloadTermoAluno);
-router.delete('/alunos/:alunoId/termos/:termoId', authorizeRole(['admin', 'funcionario']), termoMatriculaController.deleteTermoAluno);
+router.delete('/alunos/:alunoId/termos/:termoId', authorizeRoles(['administrador', 'atendente']), termoMatriculaController.deleteTermoAluno);
 
-// Generate PDF term
+// Gerar PDF do termo
 router.post('/alunos/:alunoId/termos/gerar/:modeloId', termoMatriculaController.generatePDF);
 
 export default router;

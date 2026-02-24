@@ -1,20 +1,15 @@
-// backend/src/routes/dashboardRoutes.js
+// backend/src/routes/dashboardRoutes.ts
 import express from "express";
+import { authenticateUser } from "../middleware/auth";
+import * as dashboardController from "../controllers/dashboardController";
+
 const router = express.Router();
-const dashboardController: any = require('../controllers/dashboardController');
-import verifyToken from "../middleware/verifyToken";
 
-// Aplicar middleware de verificação de token para todas as rotas do dashboard
-router.use(verifyToken);
+router.use(authenticateUser);
 
-// Rota original usada pelo componente Dashboard.jsx
 router.get('/dashboard/metrics', dashboardController.getMetrics);
-
-// Rotas para informações extras do dashboard
 router.get('/dashboard/aniversariantes', dashboardController.getAniversariantesDoMes);
 router.get('/dashboard/pagamentos-vencendo', dashboardController.getPagamentosVencendo);
-
-// Novas rotas para os gráficos e estatísticas
 router.get('/dashboard/estatisticas', dashboardController.getEstatisticas);
 router.get('/dashboard/status-alunos', dashboardController.getStatusAlunos);
 router.get('/dashboard/distribuicao-planos', dashboardController.getDistribuicaoPlanos);

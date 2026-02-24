@@ -1,4 +1,3 @@
-// frontend/src/pages/ExerciciosPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +12,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import VideoLibraryIcon from '@mui/icons-material/VideoLibrary';
 import FilterListIcon from '@mui/icons-material/FilterList';
+import { API_BASE } from '../services/api';
 import { toast } from 'react-toastify';
 
 // Lista de grupos musculares predefinidos
@@ -100,7 +100,7 @@ function ExerciciosPage() {
       }
       
       const response = await axios.get(
-        `http://localhost:3001/api/exercicios?${params.toString()}`, 
+        `${API_BASE}/exercicios?${params.toString()}`, 
         authHeader()
       );
       
@@ -179,10 +179,10 @@ function ExerciciosPage() {
     setLoading(true);
     try {
       if (editId) { // Se estiver a editar
-        await axios.put(`http://localhost:3001/api/exercicios/${editId}`, formData, authHeader());
+        await axios.put(`${API_BASE}/exercicios/${editId}`, formData, authHeader());
         toast.success("Exercício atualizado com sucesso!");
       } else { // Se estiver a criar
-        await axios.post('http://localhost:3001/api/exercicios', formData, authHeader());
+        await axios.post(`${API_BASE}/exercicios`, formData, authHeader());
         toast.success("Exercício criado com sucesso!");
       }
       resetForm();
@@ -209,7 +209,7 @@ function ExerciciosPage() {
     if (window.confirm("Tem a certeza de que deseja excluir este exercício?")) {
       setLoading(true);
       try {
-        await axios.delete(`http://localhost:3001/api/exercicios/${id}`, authHeader());
+        await axios.delete(`${API_BASE}/exercicios/${id}`, authHeader());
         toast.success("Exercício excluído com sucesso!");
         fetchExercicios();
       } catch (error) {

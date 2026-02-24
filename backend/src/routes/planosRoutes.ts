@@ -1,16 +1,16 @@
-// backend/src/routes/planosRoutes.js
+// backend/src/routes/planosRoutes.ts
 import express from "express";
-const router = express.Router();
-const planosController: any = require('../controllers/planosController');
-import verifyToken from "../middleware/verifyToken";
-import authorizeRole from "../middleware/authorizeRole";
+import { authenticateUser, authorizeRoles } from "../middleware/auth";
+import * as planosController from "../controllers/planosController";
 
-// Listar planos continua público para o formulário de alunos funcionar
+const router = express.Router();
+
+// GET planos é público para o formulário de cadastro de alunos funcionar
 router.get('/planos', planosController.getPlanos);
 
 // Apenas administradores podem criar, atualizar ou deletar planos
-router.post('/planos', verifyToken, authorizeRole(['administrador']), planosController.createPlano);
-router.put('/planos/:id', verifyToken, authorizeRole(['administrador']), planosController.updatePlano);
-router.delete('/planos/:id', verifyToken, authorizeRole(['administrador']), planosController.deletePlano);
+router.post('/planos', authenticateUser, authorizeRoles(['administrador']), planosController.createPlano);
+router.put('/planos/:id', authenticateUser, authorizeRoles(['administrador']), planosController.updatePlano);
+router.delete('/planos/:id', authenticateUser, authorizeRoles(['administrador']), planosController.deletePlano);
 
 export default router;

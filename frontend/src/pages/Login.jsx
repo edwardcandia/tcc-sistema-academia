@@ -1,4 +1,3 @@
-// frontend/src/pages/Login.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -14,18 +13,10 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Login unificado - detecta automaticamente o tipo de usuário
-      const tipoUsuarioLogado = await login(email, senha);
-      
-      // Redireciona com base no tipo de usuário detectado
-      if (tipoUsuarioLogado === 'aluno') {
-        navigate('/aluno/dashboard');
-      } else {
-        navigate('/dashboard');
-      }
+      await login(email, senha);
+      navigate('/dashboard');
     } catch (error) {
-      console.error('Erro no login:', error);
-      toast.error(error.response?.data?.error || 'Falha no login. Verifique as suas credenciais.');
+      toast.error(error.response?.data?.error || 'Falha no login. Verifique suas credenciais.');
     }
   };
 

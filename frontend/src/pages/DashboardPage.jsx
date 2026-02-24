@@ -1,5 +1,4 @@
-﻿// frontend/src/pages/DashboardPage.jsx
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, Link } from "react-router-dom";
@@ -37,6 +36,7 @@ import {
 } from "@mui/icons-material";
 
 import DashboardCharts from "../components/DashboardCharts";
+import { API_BASE } from "../services/api";
 
 function DashboardPage() {
   const { authHeader, user, logout } = useAuth();
@@ -57,9 +57,9 @@ function DashboardPage() {
     setLoading(true);
     try {
       const [resEstatisticas, resAniversariantes, resPagamentos] = await Promise.all([
-        axios.get("http://localhost:3001/api/dashboard/estatisticas", authHeader()),
-        axios.get("http://localhost:3001/api/dashboard/aniversariantes", authHeader()),
-        axios.get("http://localhost:3001/api/dashboard/pagamentos-vencendo", authHeader()),
+        axios.get(`${API_BASE}/dashboard/estatisticas`, authHeader()),
+        axios.get(`${API_BASE}/dashboard/aniversariantes`, authHeader()),
+        axios.get(`${API_BASE}/dashboard/pagamentos-vencendo`, authHeader()),
       ]);
 
       // Simplified handling - trust the backend formatting

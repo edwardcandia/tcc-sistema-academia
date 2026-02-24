@@ -1,4 +1,3 @@
-// frontend/src/pages/ModeloTreinoDetalhePage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -9,6 +8,7 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { toast } from 'react-toastify';
+import { API_BASE } from '../services/api';
 
 function ModeloTreinoDetalhePage() {
   const { id } = useParams();
@@ -25,7 +25,7 @@ function ModeloTreinoDetalhePage() {
 
   const fetchDetalhesModelo = useCallback(async () => {
     try {
-      const response = await axios.get(`http://localhost:3001/api/modelos-treino/${id}`, authHeader());
+      const response = await axios.get(`${API_BASE}/modelos-treino/${id}`, authHeader());
       setModelo(response.data);
     } catch (error) {
       toast.error("Falha ao carregar detalhes do modelo.");
@@ -34,7 +34,7 @@ function ModeloTreinoDetalhePage() {
 
   const fetchTodosExercicios = useCallback(async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/exercicios', authHeader());
+      const response = await axios.get(`${API_BASE}/exercicios`, authHeader());
       setTodosExercicios(response.data);
     } catch (error) {
       toast.error("Falha ao carregar a biblioteca de exercícios.");
@@ -59,7 +59,7 @@ function ModeloTreinoDetalhePage() {
         toast.error("Por favor, selecione um exercício da lista.");
         return;
       }
-      await axios.post(`http://localhost:3001/api/modelos-treino/${id}/exercicios`, formExercicio, authHeader());
+      await axios.post(`${API_BASE}/modelos-treino/${id}/exercicios`, formExercicio, authHeader());
       toast.success("Exercício adicionado ao modelo!");
       setFormExercicio({ exercicio_id: '', series: '', repeticoes: '', descanso_segundos: '' });
       setAutocompleteValue(null);
@@ -72,7 +72,7 @@ function ModeloTreinoDetalhePage() {
   const handleRemoveExercicio = async (exercicioDoModeloId) => {
     if (window.confirm("Tem certeza que deseja remover este exercício do modelo?")) {
       try {
-        await axios.delete(`http://localhost:3001/api/modelos-treino/exercicios/${exercicioDoModeloId}`, authHeader());
+        await axios.delete(`${API_BASE}/modelos-treino/exercicios/${exercicioDoModeloId}`, authHeader());
         toast.success("Exercício removido do modelo!");
         fetchDetalhesModelo();
       } catch (error) {

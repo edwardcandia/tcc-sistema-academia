@@ -1,4 +1,3 @@
-// frontend/src/pages/ModelosTreinoPage.jsx
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -13,6 +12,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import Dialog from '@mui/material/Dialog';
+import { API_BASE } from '../services/api';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
@@ -29,7 +29,7 @@ function ModelosTreinoPage() {
 
   const fetchModelos = async () => {
     try {
-      const response = await axios.get('http://localhost:3001/api/modelos-treino', authHeader());
+      const response = await axios.get(`${API_BASE}/modelos-treino`, authHeader());
       setModelos(response.data);
     } catch (error) {
       toast.error("Falha ao carregar modelos de treino.");
@@ -47,7 +47,7 @@ function ModelosTreinoPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:3001/api/modelos-treino', formData, authHeader());
+      await axios.post(`${API_BASE}/modelos-treino`, formData, authHeader());
       toast.success("Modelo de treino criado com sucesso!");
       setFormData({ nome: '', descricao: '' });
       fetchModelos();
@@ -59,7 +59,7 @@ function ModelosTreinoPage() {
   const handleDelete = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir este modelo de treino e todos os seus exercícios associados?")) {
       try {
-        await axios.delete(`http://localhost:3001/api/modelos-treino/${id}`, authHeader());
+        await axios.delete(`${API_BASE}/modelos-treino/${id}`, authHeader());
         toast.success("Modelo de treino excluído com sucesso!");
         fetchModelos();
       } catch (error) {
@@ -85,7 +85,7 @@ function ModelosTreinoPage() {
   const handleDuplicate = async () => {
     try {
       await axios.post(
-        `http://localhost:3001/api/modelos-treino/${selectedModeloId}/duplicar`, 
+        `${API_BASE}/modelos-treino/${selectedModeloId}/duplicar`, 
         duplicateFormData, 
         authHeader()
       );
