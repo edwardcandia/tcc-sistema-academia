@@ -14,6 +14,7 @@ const createModeloTreino = async (req: Request, res: Response): Promise<void> =>
         );
         res.status(201).json(result.rows[0]);
     } catch (error) {
+        console.error('Erro ao criar modelo de treino:', error);
         res.status(500).json({ error: 'Erro ao criar modelo de treino.' });
     }
 };
@@ -23,6 +24,7 @@ const getAllModelosTreino = async (req: Request, res: Response): Promise<void> =
         const result = await db.query('SELECT * FROM modelos_treino ORDER BY nome ASC');
         res.status(200).json(result.rows);
     } catch (error) {
+        console.error('Erro ao buscar modelos de treino:', error);
         res.status(500).json({ error: 'Erro ao buscar modelos de treino.' });
     }
 };
@@ -47,6 +49,7 @@ const getModeloTreinoById = async (req: Request, res: Response): Promise<void> =
 
         res.status(200).json({ ...modeloResult.rows[0], exercicios: exerciciosResult.rows });
     } catch (error) {
+        console.error('Erro ao buscar detalhes do modelo de treino:', error);
         res.status(500).json({ error: 'Erro ao buscar detalhes do modelo de treino.' });
     }
 };
@@ -65,6 +68,7 @@ const addExercicioAoModelo = async (req: Request, res: Response): Promise<void> 
         );
         res.status(201).json(result.rows[0]);
     } catch (error) {
+        console.error('Erro ao adicionar exercício ao modelo:', error);
         res.status(500).json({ error: 'Erro ao adicionar exercício ao modelo.' });
     }
 };
@@ -79,6 +83,7 @@ const removeExercicioDoModelo = async (req: Request, res: Response): Promise<voi
         }
         res.status(200).json({ message: 'Exercício removido do modelo com sucesso.' });
     } catch (error) {
+        console.error('Erro ao remover exercício do modelo:', error);
         res.status(500).json({ error: 'Erro ao remover exercício do modelo.' });
     }
 };
@@ -90,9 +95,10 @@ const deleteModeloTreino = async (req: Request, res: Response): Promise<void> =>
         if(result.rowCount === 0) {
             return void res.status(404).json({error: 'Modelo de treino não encontrado'});
         }
-        res.status(200).json({message: 'Modelo de treino deletado com sucesso'});
+        res.status(200).json({message: 'Modelo de treino excluído com sucesso'});
     } catch(error) {
-        res.status(500).json({error: 'Erro ao deletar modelo de treino'});
+        console.error('Erro ao excluir modelo de treino:', error);
+        res.status(500).json({error: 'Erro ao excluir modelo de treino.'});
     }
 }
 
@@ -101,7 +107,7 @@ const duplicateModeloTreino = async (req: Request, res: Response): Promise<void>
     const { nome, descricao } = req.body;
 
     if (!nome) {
-        return void res.status(400).json({ error: 'O nome do novo modelo e obrigatorio.' });
+        return void res.status(400).json({ error: 'O nome do novo modelo é obrigatório.' });
     }
 
     try {
@@ -112,7 +118,7 @@ const duplicateModeloTreino = async (req: Request, res: Response): Promise<void>
 
         const novoModelo = await db.query(
             'INSERT INTO modelos_treino (nome, descricao) VALUES ($1, $2) RETURNING *',
-            [nome, descricao || `${modeloOriginal.rows[0].descricao} (Copia)`]
+            [nome, descricao || `${modeloOriginal.rows[0].descricao} (Cópia)`]
         );
         const novoModeloId = novoModelo.rows[0].id;
 

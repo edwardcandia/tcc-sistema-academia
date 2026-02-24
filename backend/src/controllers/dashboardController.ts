@@ -16,8 +16,8 @@ const getMetrics = async (_req: Request, res: Response): Promise<void> => {
             receitaMensal: parseFloat(receitaMensalRes.rows[0].receita_total || 0).toFixed(2)
         });
     } catch (error) {
-        console.error('Erro ao buscar metricas:', error);
-        res.status(500).json({ error: 'Erro ao buscar as metricas.' });
+        console.error('Erro ao buscar métricas:', error);
+        res.status(500).json({ error: 'Erro ao buscar as métricas.' });
     }
 };
 
@@ -48,8 +48,8 @@ const getPagamentosVencendo = async (_req: Request, res: Response): Promise<void
         `);
         res.status(200).json(result.rows);
     } catch (error) {
-        console.error('Erro ao buscar pagamentos proximos:', error);
-        res.status(500).json({ error: 'Erro ao buscar pagamentos proximos.' });
+        console.error('Erro ao buscar pagamentos próximos:', error);
+        res.status(500).json({ error: 'Erro ao buscar pagamentos próximos.' });
     }
 };
 
@@ -73,8 +73,8 @@ const getEstatisticas = async (_req: Request, res: Response): Promise<void> => {
             pagamentosPendentes: parseInt(pagamentosPendentesRes.rows[0].count, 10)
         });
     } catch (error) {
-        console.error('Erro ao buscar estatisticas:', error);
-        res.status(500).json({ error: 'Erro ao buscar estatisticas do dashboard.' });
+        console.error('Erro ao buscar estatísticas:', error);
+        res.status(500).json({ error: 'Erro ao buscar estatísticas do dashboard.' });
     }
 };
 
@@ -99,8 +99,8 @@ const getDistribuicaoPlanos = async (_req: Request, res: Response): Promise<void
         `);
         res.status(200).json(result.rows);
     } catch (error) {
-        console.error('Erro ao buscar distribuicao de planos:', error);
-        res.status(500).json({ error: 'Erro ao buscar distribuicao de alunos por plano.' });
+        console.error('Erro ao buscar distribuição de planos:', error);
+        res.status(500).json({ error: 'Erro ao buscar distribuição de alunos por plano.' });
     }
 };
 
@@ -132,8 +132,8 @@ const getHistoricoPagamentos = async (_req: Request, res: Response): Promise<voi
             valores: result.rows.map(r => parseFloat(r.receita_total || 0))
         });
     } catch (error) {
-        console.error('Erro ao buscar historico de pagamentos:', error);
-        res.status(500).json({ error: 'Erro ao buscar historico de pagamentos.' });
+        console.error('Erro ao buscar histórico de pagamentos:', error);
+        res.status(500).json({ error: 'Erro ao buscar histórico de pagamentos.' });
     }
 };
 

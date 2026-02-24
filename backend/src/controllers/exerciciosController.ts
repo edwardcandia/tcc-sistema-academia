@@ -2,8 +2,8 @@
 import db from '../config/database';
 
 export const GRUPOS_MUSCULARES = [
-    'Peito', 'Costas', 'Pernas', 'Ombros', 'Biceps',
-    'Triceps', 'Abdomen', 'Gluteos', 'Panturrilha', 'Antebraco', 'Lombar'
+    'Peito', 'Costas', 'Pernas', 'Ombros', 'Bíceps',
+    'Tríceps', 'Abdômen', 'Glúteos', 'Panturrilha', 'Antebraço', 'Lombar'
 ];
 
 const isValidYoutubeUrl = (url: string): boolean => {
@@ -22,15 +22,15 @@ export const createExercicio = async (req: Request, res: Response): Promise<void
     const { nome, grupo_muscular, link_video, imagem_url, instrucoes } = req.body;
 
     if (!nome || typeof nome !== 'string' || nome.trim().length < 3) {
-        res.status(400).json({ error: 'Nome do exercicio deve ter pelo menos 3 caracteres.' });
+        res.status(400).json({ error: 'Nome do exercício deve ter pelo menos 3 caracteres.' });
         return;
     }
     if (!grupo_muscular || !GRUPOS_MUSCULARES.includes(grupo_muscular)) {
-        res.status(400).json({ error: 'Grupo muscular invalido.', grupos_validos: GRUPOS_MUSCULARES });
+        res.status(400).json({ error: 'Grupo muscular inválido.', grupos_validos: GRUPOS_MUSCULARES });
         return;
     }
     if (link_video && !isValidYoutubeUrl(link_video)) {
-        res.status(400).json({ error: 'URL de video invalida. Deve ser uma URL do YouTube.' });
+        res.status(400).json({ error: 'URL de vídeo inválida. Deve ser uma URL do YouTube.' });
         return;
     }
     try {
@@ -38,7 +38,7 @@ export const createExercicio = async (req: Request, res: Response): Promise<void
             'SELECT id FROM exercicios WHERE LOWER(nome) = LOWER($1)', [nome.trim()]
         );
         if (existeExercicio.rows.length > 0) {
-            res.status(409).json({ error: 'Ja existe um exercicio com este nome.' });
+            res.status(409).json({ error: 'Já existe um exercício com este nome.' });
             return;
         }
         const result = await db.query(
@@ -47,9 +47,9 @@ export const createExercicio = async (req: Request, res: Response): Promise<void
         );
         res.status(201).json(result.rows[0]);
     } catch (error: any) {
-        console.error('Erro ao criar exercicio:', error);
-        if (error.code === '23505') { res.status(409).json({ error: 'Ja existe um exercicio com este nome.' }); return; }
-        res.status(500).json({ error: 'Erro ao criar exercicio.' });
+        console.error('Erro ao criar exercício:', error);
+        if (error.code === '23505') { res.status(409).json({ error: 'Já existe um exercício com este nome.' }); return; }
+        res.status(500).json({ error: 'Erro ao criar exercício.' });
     }
 };
 
@@ -61,7 +61,7 @@ export const getAllExercicios = async (req: Request, res: Response): Promise<voi
         const search = String(req.query.search || '');
 
         if (page < 1 || limit < 1 || limit > 100) {
-            res.status(400).json({ error: 'Parametros de paginacao invalidos.' });
+            res.status(400).json({ error: 'Parâmetros de paginação inválidos.' });
             return;
         }
         const offset = (page - 1) * limit;
@@ -89,8 +89,8 @@ export const getAllExercicios = async (req: Request, res: Response): Promise<voi
             pagination: { total, totalPages, currentPage: page, limit, hasNextPage: page < totalPages, hasPrevPage: page > 1 }
         });
     } catch (error) {
-        console.error('Erro ao buscar exercicios:', error);
-        res.status(500).json({ error: 'Erro ao buscar exercicios.' });
+        console.error('Erro ao buscar exercícios:', error);
+        res.status(500).json({ error: 'Erro ao buscar exercícios.' });
     }
 };
 
@@ -99,19 +99,19 @@ export const updateExercicio = async (req: Request, res: Response): Promise<void
     const { nome, grupo_muscular, link_video, imagem_url, instrucoes } = req.body;
 
     if (!nome || typeof nome !== 'string' || nome.trim().length < 3) {
-        res.status(400).json({ error: 'Nome do exercicio deve ter pelo menos 3 caracteres.' });
+        res.status(400).json({ error: 'Nome do exercício deve ter pelo menos 3 caracteres.' });
         return;
     }
     if (!grupo_muscular || !GRUPOS_MUSCULARES.includes(grupo_muscular)) {
-        res.status(400).json({ error: 'Grupo muscular invalido.', grupos_validos: GRUPOS_MUSCULARES });
+        res.status(400).json({ error: 'Grupo muscular inválido.', grupos_validos: GRUPOS_MUSCULARES });
         return;
     }
     if (link_video && !isValidYoutubeUrl(link_video)) {
-        res.status(400).json({ error: 'URL de video invalida.' });
+        res.status(400).json({ error: 'URL de vídeo inválida.' });
         return;
     }
     if (imagem_url && !isValidImageUrl(imagem_url)) {
-        res.status(400).json({ error: 'URL de imagem invalida.' });
+        res.status(400).json({ error: 'URL de imagem inválida.' });
         return;
     }
     try {
@@ -135,7 +135,7 @@ export const updateExercicio = async (req: Request, res: Response): Promise<void
         );
         res.status(200).json(result.rows[0]);
     } catch (error: any) {
-        console.error('Erro ao atualizar exercicio:', error);
+        console.error('Erro ao atualizar exercício:', error);
         if (error.code === '23505') { res.status(409).json({ error: 'Já existe um exercício com este nome.' }); return; }
         res.status(500).json({ error: 'Erro ao atualizar exercício.' });
     }
@@ -155,11 +155,11 @@ export const deleteExercicio = async (req: Request, res: Response): Promise<void
             return;
         }
         await db.query('DELETE FROM exercicios WHERE id = $1', [id]);
-        res.status(200).json({ message: 'Exercicio deletado com sucesso.', id: parseInt(id) });
+        res.status(200).json({ message: 'Exercício excluído com sucesso.', id: parseInt(id) });
     } catch (error: any) {
-        console.error('Erro ao deletar exercicio:', error);
-        if (error.code === '23503') { res.status(409).json({ error: 'Exercicio em uso em modelo de treino.' }); return; }
-        res.status(500).json({ error: 'Erro ao deletar exercicio.' });
+        console.error('Erro ao excluir exercício:', error);
+        if (error.code === '23503') { res.status(409).json({ error: 'Exercício em uso em modelo de treino.' }); return; }
+        res.status(500).json({ error: 'Erro ao excluir exercício.' });
     }
 };
 
@@ -173,7 +173,7 @@ export const getExercicioById = async (req: Request, res: Response): Promise<voi
         }
         res.status(200).json(result.rows[0]);
     } catch (error) {
-        console.error('Erro ao buscar exercicio por ID:', error);
+        console.error('Erro ao buscar exercício por ID:', error);
         res.status(500).json({ error: 'Erro ao buscar exercício.' });
     }
 };
@@ -181,14 +181,14 @@ export const getExercicioById = async (req: Request, res: Response): Promise<voi
 export const getExerciciosByGrupo = async (req: Request, res: Response): Promise<void> => {
     const { grupo } = req.params;
     if (!GRUPOS_MUSCULARES.includes(grupo)) {
-        res.status(400).json({ error: 'Grupo muscular invalido.', grupos_validos: GRUPOS_MUSCULARES });
+        res.status(400).json({ error: 'Grupo muscular inválido.', grupos_validos: GRUPOS_MUSCULARES });
         return;
     }
     try {
         const result = await db.query('SELECT * FROM exercicios WHERE grupo_muscular = $1 ORDER BY nome ASC', [grupo]);
         res.status(200).json(result.rows);
     } catch (error) {
-        console.error('Erro ao buscar exercicios por grupo:', error);
-        res.status(500).json({ error: 'Erro ao buscar exercicios por grupo muscular.' });
+        console.error('Erro ao buscar exercícios por grupo:', error);
+        res.status(500).json({ error: 'Erro ao buscar exercícios por grupo muscular.' });
     }
 };
