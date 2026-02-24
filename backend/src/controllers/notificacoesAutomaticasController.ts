@@ -40,20 +40,17 @@ export const enviarLembretesPagamento = async (req: Request, res: Response): Pro
                     valor: pagamento.valor
                 }
             );
-            
-            // Se o e-mail foi enviado com sucesso, criar uma notificação no sistema
+
+            // Sempre cria notificação interna, independentemente do e-mail
+            const dataVencimento = new Date(pagamento.data_vencimento).toLocaleDateString('pt-BR');
+            await criarNotificacaoInterna(
+                pagamento.aluno_id,
+                `Lembrete: Você tem um pagamento de R$ ${parseFloat(pagamento.valor).toFixed(2)} com vencimento em ${dataVencimento}. ID: ${pagamento.id}`,
+                'alerta'
+            );
+
             if (resultadoEmail.success) {
                 sucessos++;
-                
-                // Formato da data para texto
-                const dataVencimento = new Date(pagamento.data_vencimento).toLocaleDateString('pt-BR');
-                
-                // Criar notificação no sistema
-                await criarNotificacaoInterna(
-                    pagamento.aluno_id,
-                    `Lembrete: Você tem um pagamento de R$ ${parseFloat(pagamento.valor).toFixed(2)} com vencimento em ${dataVencimento}. ID: ${pagamento.id}`,
-                    'alerta'
-                );
             }
         }
 
@@ -117,17 +114,16 @@ export const enviarLembretesTreino = async (req: Request, res: Response): Promis
                     objetivo: treino.objetivo
                 }
             );
-            
-            // Se o e-mail foi enviado com sucesso, criar uma notificação no sistema
+
+            // Sempre cria notificação interna, independentemente do e-mail
+            await criarNotificacaoInterna(
+                treino.aluno_id,
+                `Lembrete: Você tem o treino "${treino.nome}" agendado para hoje. Não se esqueça de registrar após concluí-lo!`,
+                'info'
+            );
+
             if (resultadoEmail.success) {
                 sucessos++;
-                
-                // Criar notificação no sistema
-                await criarNotificacaoInterna(
-                    treino.aluno_id,
-                    `Lembrete: Você tem o treino "${treino.nome}" agendado para hoje. Não se esqueça de registrar após concluí-lo!`,
-                    'info'
-                );
             }
         }
 

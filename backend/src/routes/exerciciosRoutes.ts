@@ -11,10 +11,10 @@ router.get('/exercicios/grupos', (req: Request, res: Response) => {
     res.json({ grupos: exerciciosController.GRUPOS_MUSCULARES });
 });
 
-// Rotas que permitem visualização por instrutores e administradores
-router.get('/exercicios', authenticateUser, authorizeRoles(['administrador', 'instrutor']), exerciciosController.getAllExercicios);
-router.get('/exercicios/:id', authenticateUser, authorizeRoles(['administrador', 'instrutor']), exerciciosController.getExercicioById);
-router.get('/exercicios/grupo/:grupo', authenticateUser, authorizeRoles(['administrador', 'instrutor']), exerciciosController.getExerciciosByGrupo);
+// Administradores e atendentes podem visualizar exercícios
+router.get('/exercicios', authenticateUser, authorizeRoles(['administrador', 'atendente']), exerciciosController.getAllExercicios);
+router.get('/exercicios/:id', authenticateUser, authorizeRoles(['administrador', 'atendente']), exerciciosController.getExercicioById);
+router.get('/exercicios/grupo/:grupo', authenticateUser, authorizeRoles(['administrador', 'atendente']), exerciciosController.getExerciciosByGrupo);
 
 // Rotas que permitem modificação apenas por administradores
 router.post('/exercicios', authenticateUser, authorizeRoles(['administrador']), exerciciosController.createExercicio);

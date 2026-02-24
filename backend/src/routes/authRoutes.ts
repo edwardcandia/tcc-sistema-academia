@@ -7,8 +7,13 @@ import bcrypt from "bcryptjs";
 
 const router = express.Router();
 
-// Registrar novo usuário admin/atendente
-router.post('/auth/register', authController.registerUser);
+// Registrar novo usuário admin/atendente — apenas administradores podem criar contas
+router.post('/auth/register', authenticateUser, authorizeRoles(['administrador']), authController.registerUser);
+
+// Listar, excluir e redefinir senha de usuários — apenas administradores
+router.get('/usuarios', authenticateUser, authorizeRoles(['administrador']), authController.getUsuarios);
+router.delete('/usuarios/:id', authenticateUser, authorizeRoles(['administrador']), authController.deleteUsuario);
+router.patch('/usuarios/:id/senha', authenticateUser, authorizeRoles(['administrador']), authController.resetSenhaUsuario);
 
 // Verificar se o token é válido
 router.get('/auth/verify-token', authController.verifyToken);

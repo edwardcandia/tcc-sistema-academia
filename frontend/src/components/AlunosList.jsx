@@ -30,18 +30,19 @@ const styleModal = {
   top: '50%',
   left: '50%',
   transform: 'translate(-50%, -50%)',
-  width: 400,
+  width: { xs: '92%', sm: 440 },
   bgcolor: 'background.paper',
-  border: '2px solid #000',
+  borderRadius: 2,
   boxShadow: 24,
-  p: 4,
+  p: 3,
   display: 'flex',
   flexDirection: 'column',
   gap: 2
 };
 
 function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
-  const { authHeader } = useAuth();
+  const { authHeader, user } = useAuth();
+  const isAdmin = user?.cargo === 'administrador';
   const [pagamentoModalOpen, setPagamentoModalOpen] = useState(false);
   const [alunoParaPagamento, setAlunoParaPagamento] = useState(null);
   const [valorPago, setValorPago] = useState('');
@@ -144,33 +145,42 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
   return (
     <>
       <Typography variant="h6" sx={{ mb: 2 }}>Lista de Alunos</Typography>
-      <TableContainer component={Paper}>
-        <Table>
+      {alunos.length === 0 ? (
+        <Typography color="text.secondary" sx={{ textAlign: 'center', py: 4 }}>Nenhum aluno encontrado.</Typography>
+      ) : (
+      <TableContainer component={Paper} sx={{ overflowX: 'auto' }}>
+        <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Nome Completo</TableCell>
-              <TableCell>Email</TableCell>
-              <TableCell>Status Pagamento</TableCell>
-              <TableCell align="right">Ações</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Nome Completo</TableCell>
+              <TableCell sx={{ fontWeight: 600, display: { xs: 'none', sm: 'table-cell' } }}>Email</TableCell>
+              <TableCell sx={{ fontWeight: 600 }}>Pgto.</TableCell>
+              <TableCell align="right" sx={{ fontWeight: 600 }}>Ações</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {alunos.map(aluno => (
-              <TableRow key={aluno.id} sx={{ backgroundColor: aluno.status_pagamento === 'atrasado' ? '#ffebee' : 'inherit' }}>
-                <TableCell>{aluno.nome_completo}</TableCell>
-                <TableCell>{aluno.email}</TableCell>
+              <TableRow key={aluno.id} sx={{ backgroundColor: aluno.status_pagamento === 'atrasado' ? '#ffebee' : 'inherit', '&:hover': { bgcolor: aluno.status_pagamento === 'atrasado' ? '#ffcdd2' : 'action.hover' } }}>
+                <TableCell>
+                  <Typography variant="body2" fontWeight={500}>{aluno.nome_completo}</Typography>
+                  <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' } }}>{aluno.email}</Typography>
+                </TableCell>
+                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{aluno.email}</TableCell>
                 <TableCell><Chip label={aluno.status_pagamento.replace('_', ' ')} color={getStatusColor(aluno.status_pagamento)} size="small" /></TableCell>
                 <TableCell align="right">
-                  <IconButton onClick={() => handleOpenPagamentoModal(aluno)} color="success" title="Registrar Pagamento"><PaymentIcon /></IconButton>
-                  <IconButton onClick={() => handleOpenHistoricoModal(aluno)} color="default" title="Histórico de Pagamentos"><HistoryIcon /></IconButton>
-                  <IconButton onClick={() => handleOpenEditModal(aluno)} color="primary" title="Editar Aluno"><EditIcon /></IconButton>
-                  <IconButton onClick={() => handleDelete(aluno.id)} color="error" title="Excluir Aluno"><DeleteIcon /></IconButton>
+                  <IconButton onClick={() => handleOpenPagamentoModal(aluno)} color="success" title="Registrar Pagamento" size="small"><PaymentIcon fontSize="small" /></IconButton>
+                  <IconButton onClick={() => handleOpenHistoricoModal(aluno)} color="default" title="Histórico de Pagamentos" size="small"><HistoryIcon fontSize="small" /></IconButton>
+                  <IconButton onClick={() => handleOpenEditModal(aluno)} color="primary" title="Editar Aluno" size="small"><EditIcon fontSize="small" /></IconButton>
+                  {isAdmin && (
+                    <IconButton onClick={() => handleDelete(aluno.id)} color="error" title="Excluir Aluno" size="small"><DeleteIcon fontSize="small" /></IconButton>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
       </TableContainer>
+      )}
 
       {alunoParaEditar && (
         <Modal open={editModalOpen} onClose={handleCloseEditModal}>
@@ -223,7 +233,9 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
                 <TableBody>
                   {historicoPagamentos.length > 0 ? historicoPagamentos.map(pg => (
                     <TableRow key={pg.id}><TableCell>{pg.data_pagamento}</TableCell><TableCell align="right">R$ {parseFloat(pg.valor).toFixed(2)}</TableCell>
-                    <TableCell align="right"><IconButton size="small" onClick={() => handleDeletePagamento(pg.id)} color="error" title="Excluir Pagamento"><DeleteIcon fontSize="small"/></IconButton></TableCell>
+                    <TableCell align="right">{isAdmin && (
+                      <IconButton size="small" onClick={() => handleDeletePagamento(pg.id)} color="error" title="Excluir Pagamento"><DeleteIcon fontSize="small"/></IconButton>
+                    )}</TableCell>
                     </TableRow>
                   )) : ( <TableRow><TableCell colSpan={3} align="center">Nenhum pagamento encontrado.</TableCell></TableRow> )}
                 </TableBody>

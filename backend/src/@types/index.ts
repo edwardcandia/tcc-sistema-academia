@@ -10,6 +10,10 @@ declare global {
         nome: string;
         cargo?: string;
       };
+      aluno?: {
+        id: number;
+        tipo: string;
+      };
     }
   }
 }

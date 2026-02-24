@@ -14,23 +14,16 @@ import DashboardPage from './pages/DashboardPage';
 import AlunosPage from './pages/AlunosPage';
 import PlanosPage from './pages/PlanosPage';
 import ExerciciosPage from './pages/ExerciciosPage';
-import AlunoLoginPage from './pages/AlunoLoginPage';
-import AlunoDashboardPage from './pages/AlunoDashboardPage';
 import ModelosTreinoPage from './pages/ModelosTreinoPage';
 import ModeloTreinoDetalhePage from './pages/ModeloTreinoDetalhePage';
-import AlunoTreinoDetalhePage from './pages/AlunoTreinoDetalhePage';
 import NotificacoesAutomaticasPage from './pages/NotificacoesAutomaticasPage';
+import InadimplentesPage from './pages/InadimplentesPage';
+import UsuariosPage from './pages/UsuariosPage';
 
 function PrivateRoute({ children, roles }) {
   const { token, user } = useAuth();
   if (!token || !user) return <Navigate to="/login" />;
   if (roles && !roles.includes(user.cargo)) return <Navigate to="/dashboard" />;
-  return children;
-}
-
-function AlunoPrivateRoute({ children }) {
-  const { token, aluno } = useAuth();
-  if (!token || !aluno) return <Navigate to="/aluno/login" />;
   return children;
 }
 
@@ -65,17 +58,19 @@ function App() {
               <Route path="notificacoes-automaticas" element={
                 <PrivateRoute roles={['administrador']}><NotificacoesAutomaticasPage /></PrivateRoute>
               } />
+              <Route path="inadimplentes" element={
+                <PrivateRoute roles={['administrador', 'atendente']}><InadimplentesPage /></PrivateRoute>
+              } />
               <Route path="modelos-treino" element={
                 <PrivateRoute roles={['administrador']}><ModelosTreinoPage /></PrivateRoute>
               } />
               <Route path="modelos-treino/:id" element={
                 <PrivateRoute roles={['administrador']}><ModeloTreinoDetalhePage /></PrivateRoute>
               } />
+              <Route path="usuarios" element={
+                <PrivateRoute roles={['administrador']}><UsuariosPage /></PrivateRoute>
+              } />
             </Route>
-
-            <Route path="/aluno/login" element={<AlunoLoginPage />} />
-            <Route path="/aluno/dashboard" element={<AlunoPrivateRoute><AlunoDashboardPage /></AlunoPrivateRoute>} />
-            <Route path="/aluno/treinos/:id" element={<AlunoPrivateRoute><AlunoTreinoDetalhePage /></AlunoPrivateRoute>} />
 
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

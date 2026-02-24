@@ -1,12 +1,9 @@
 ﻿import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import PlankGymLogo from "../components/common/PlankGymLogo";
+import { Link } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
-  CssBaseline,
   Container,
   Typography,
   Box,
@@ -34,13 +31,16 @@ import {
   ArrowForward,
   DirectionsRun,
 } from "@mui/icons-material";
+import ListAltIcon from "@mui/icons-material/ListAlt";
+import PeopleIcon from "@mui/icons-material/People";
 
 import DashboardCharts from "../components/DashboardCharts";
+import InadimplentesPanel from "../components/InadimplentesPanel";
 import { API_BASE } from "../services/api";
 
 function DashboardPage() {
-  const { authHeader, user, logout } = useAuth();
-  const navigate = useNavigate();
+  const { authHeader, user } = useAuth();
+  const isAdmin = user?.cargo === 'administrador';
 
   const [estatisticas, setEstatisticas] = useState({
     totalAlunos: 0,
@@ -56,14 +56,28 @@ function DashboardPage() {
     if (!authHeader) return;
     setLoading(true);
     try {
-      const [resEstatisticas, resAniversariantes, resPagamentos] = await Promise.all([
-        axios.get(`${API_BASE}/dashboard/estatisticas`, authHeader()),
+      const statsEndpoint = isAdmin
+        ? `${API_BASE}/dashboard/estatisticas`
+        : `${API_BASE}/dashboard/metrics`;
+
+      const [resStats, resAniversariantes, resPagamentos] = await Promise.all([
+        axios.get(statsEndpoint, authHeader()),
         axios.get(`${API_BASE}/dashboard/aniversariantes`, authHeader()),
         axios.get(`${API_BASE}/dashboard/pagamentos-vencendo`, authHeader()),
       ]);
 
-      // Simplified handling - trust the backend formatting
-      setEstatisticas(resEstatisticas.data);
+      if (isAdmin) {
+        setEstatisticas(resStats.data);
+      } else {
+        // metrics retorna totalAlunos/alunosAtivos; receitaMes e pagamentosPendentes
+        // são admin-only e ficam zerados para atendentes
+        setEstatisticas({
+          totalAlunos: resStats.data.totalAlunos,
+          alunosAtivos: resStats.data.alunosAtivos,
+          receitaMes: 0,
+          pagamentosPendentes: 0,
+        });
+      }
       setAniversariantes(resAniversariantes.data);
       setPagamentosProximos(resPagamentos.data);
     } catch (error) {
@@ -83,11 +97,6 @@ function DashboardPage() {
     // Limpar o intervalo quando o componente for desmontado
     return () => clearInterval(intervalId);
   }, [authHeader]);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   // Renderiza o conteúdo de cards de estatísticas com loader quando necessário
   const renderCardContent = (title, value, isLoading, format = null) => (
@@ -111,19 +120,11 @@ function DashboardPage() {
   );
 
   return (
-    <>
-      <CssBaseline />
-      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-      <Container maxWidth="lg">
-        <Box sx={{ my: 4 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-            <PlankGymLogo size="medium" />
-            <Button variant="outlined" onClick={handleLogout}>
-              Sair
-            </Button>
-          </Box>
+    <Container maxWidth="lg">
+      <Box sx={{ mb: 3 }}>
+        <Typography variant="h4" fontWeight={700} gutterBottom>Dashboard</Typography>
 
-          {/* Cards de estatísticas */}
+        {/* Cards de estatísticas */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
             <Grid item xs={12} sm={6} md={user && user.cargo === 'administrador' ? 3 : 4}>
               <Card sx={{ bgcolor: "#e8f5e9", color: "#2E7D32", height: "100%" }}>
@@ -193,6 +194,27 @@ function DashboardPage() {
           {/* Gráficos do Dashboard */}
           <DashboardCharts />
 
+          {/* Painel compacto de inadimplência — visível para admins e atendentes */}
+          {user && (
+            <Box sx={{ mt: 4 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                <span style={{ fontSize: 22 }}>⚠️</span>
+                <Typography variant="h5">Inadimplência</Typography>
+                <Button
+                  component={Link}
+                  to="/inadimplentes"
+                  size="small"
+                  variant="outlined"
+                  color="warning"
+                  sx={{ ml: 'auto' }}
+                >
+                  Ver todos
+                </Button>
+              </Box>
+              <InadimplentesPanel compact onPaymentRegistered={fetchPageData} />
+            </Box>
+          )}
+
           {/* Links rápidos para outras seções */}
           <Box sx={{ mt: 4 }}>
             <Typography variant="h5" gutterBottom>
@@ -205,89 +227,55 @@ function DashboardPage() {
                   component={Link}
                   to="/alunos"
                   variant="outlined"
-                  startIcon={<Person />}
                   fullWidth
-                  sx={{
-                    height: "100%",
-                    p: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                  }}
+                  sx={{ height: "100%", p: 2, display: "flex", flexDirection: "column" }}
                 >
-                  <Box sx={{ mb: 1 }}>
-                    <FitnessCenter sx={{ fontSize: 32 }} />
-                  </Box>
+                  <Box sx={{ mb: 1 }}><PeopleIcon sx={{ fontSize: 32 }} /></Box>
                   Alunos
                 </Button>
               </Grid>
-              
-              {/* Somente administradores podem acessar Planos */}
-              {user && user.cargo === 'administrador' && (
+
+              {/* Atendentes e admins: atalho para registrar pagamento */}
+              <Grid item xs={6} sm={3}>
+                <Button
+                  component={Link}
+                  to="/alunos"
+                  variant="outlined"
+                  color="success"
+                  fullWidth
+                  sx={{ height: "100%", p: 2, display: "flex", flexDirection: "column" }}
+                >
+                  <Box sx={{ mb: 1 }}><Paid sx={{ fontSize: 32 }} /></Box>
+                  Pagamentos
+                </Button>
+              </Grid>
+
+              {/* Somente administradores */}
+              {isAdmin && (
                 <Grid item xs={6} sm={3}>
                   <Button
                     component={Link}
                     to="/planos"
                     variant="outlined"
-                    startIcon={<DirectionsRun />}
                     fullWidth
-                    sx={{
-                      height: "100%",
-                      p: 2,
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
+                    sx={{ height: "100%", p: 2, display: "flex", flexDirection: "column" }}
                   >
-                    <Box sx={{ mb: 1 }}>
-                      <Paid sx={{ fontSize: 32 }} />
-                    </Box>
+                    <Box sx={{ mb: 1 }}><ListAltIcon sx={{ fontSize: 32 }} /></Box>
                     Planos
                   </Button>
                 </Grid>
               )}
-              
-              {/* Somente administradores e instrutores podem acessar Exercícios */}
-              {user && (user.cargo === 'administrador' || user.cargo === 'instrutor') && (
-                <Grid item xs={6} sm={3}>
-                  <Button
-                    component={Link}
-                    to="/exercicios"
-                    variant="outlined"
-                    startIcon={<FitnessCenter />}
-                    fullWidth
-                    sx={{
-                      height: "100%",
-                      p: 2,
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
-                  >
-                    <Box sx={{ mb: 1 }}>
-                      <DirectionsRun sx={{ fontSize: 32 }} />
-                    </Box>
-                    Exercícios
-                  </Button>
-                </Grid>
-              )}
-              
-              {/* Somente administradores podem acessar Treinos */}
-              {user && user.cargo === 'administrador' && (
+
+              {isAdmin && (
                 <Grid item xs={6} sm={3}>
                   <Button
                     component={Link}
                     to="/modelos-treino"
                     variant="outlined"
-                    startIcon={<CalendarToday />}
                     fullWidth
-                    sx={{
-                      height: "100%",
-                      p: 2,
-                      display: "flex",
-                      flexDirection: "column",
-                    }}
+                    sx={{ height: "100%", p: 2, display: "flex", flexDirection: "column" }}
                   >
-                    <Box sx={{ mb: 1 }}>
-                      <CalendarToday sx={{ fontSize: 32 }} />
-                    </Box>
+                    <Box sx={{ mb: 1 }}><FitnessCenter sx={{ fontSize: 32 }} /></Box>
                     Treinos
                   </Button>
                 </Grid>
@@ -375,9 +363,8 @@ function DashboardPage() {
               </Paper>
             </Grid>
           </Grid>
-        </Box>
-      </Container>
-    </>
+      </Box>
+    </Container>
   );
 }
 

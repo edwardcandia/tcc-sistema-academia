@@ -45,15 +45,18 @@ function DashboardCharts() {
       setError(null);
 
       try {
-        const [statusRes, planosRes, pagamentosRes] = await Promise.all([
-          axios.get(`${API_BASE}/dashboard/status-alunos`, authHeader()),
-          axios.get(`${API_BASE}/dashboard/distribuicao-planos`, authHeader()),
-          axios.get(`${API_BASE}/dashboard/historico-pagamentos`, authHeader())
-        ]);
-
+        const statusRes = await axios.get(`${API_BASE}/dashboard/status-alunos`, authHeader());
         setStatusAlunos(statusRes.data);
-        setDistribuicaoPlanos(planosRes.data);
-        setHistoricoPagamentos(pagamentosRes.data);
+
+        // distribuicao-planos e historico-pagamentos são admin-only
+        if (isAdmin) {
+          const [planosRes, pagamentosRes] = await Promise.all([
+            axios.get(`${API_BASE}/dashboard/distribuicao-planos`, authHeader()),
+            axios.get(`${API_BASE}/dashboard/historico-pagamentos`, authHeader())
+          ]);
+          setDistribuicaoPlanos(planosRes.data);
+          setHistoricoPagamentos(pagamentosRes.data);
+        }
       } catch (err) {
         console.error("Erro ao buscar dados para gráficos:", err);
         setError("Não foi possível carregar os dados dos gráficos. Tente novamente mais tarde.");
@@ -63,7 +66,7 @@ function DashboardCharts() {
     };
 
     fetchChartData();
-  }, [authHeader]);
+  }, [authHeader, isAdmin]);
 
   // Preparar dados para o gráfico de status de alunos
   const statusData = {
@@ -162,8 +165,8 @@ function DashboardCharts() {
           </Paper>
         </Grid>
         
-        {/* Distribuição por planos */}
-        <Grid item xs={12} md={6}>
+        {/* Distribuição por planos — apenas administradores */}
+        {isAdmin && <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <BarChart color="primary" sx={{ mr: 1 }} />
@@ -202,7 +205,7 @@ function DashboardCharts() {
               />
             </Box>
           </Paper>
-        </Grid>
+        </Grid>}
         
         {/* Receita mensal - apenas para administradores */}
         {isAdmin && (

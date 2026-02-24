@@ -204,17 +204,12 @@ function AlunoDashboardPage() {
         const fetchNotificacoes = async () => {
             if (!authHeader || !aluno) return;
             try {
-                const response = await axios.get(`${API_BASE}/notificacoes`, authHeader());
+                const response = await axios.get(`${API_BASE}/notificacoes/me`, authHeader());
                 if (response.data.success) {
                     setNotificacoes(response.data.data);
                 }
             } catch (error) {
                 console.error("Erro ao buscar notificações:", error);
-                // Se falhar a API, vamos manter alguns dados de exemplo para visualização
-                setNotificacoes([
-                    { id: 1, texto: "Seu plano vence em 7 dias", tipo: "alerta", lida: false },
-                    { id: 2, texto: "Novo treino atribuído pelo instrutor", tipo: "info", lida: false }
-                ]);
             }
         };
         fetchNotificacoes();
@@ -228,7 +223,7 @@ function AlunoDashboardPage() {
     // Marcar notificação como lida
     const marcarNotificacaoLida = async (id) => {
         try {
-            await axios.patch(`${API_BASE}/notificacoes/${id}/marcar-lida`, {}, authHeader());
+            await axios.patch(`${API_BASE}/notificacoes/me/${id}/lida`, {}, authHeader());
             setNotificacoes(prev => prev.map(notif => 
                 notif.id === id ? {...notif, lida: true} : notif
             ));
@@ -240,7 +235,7 @@ function AlunoDashboardPage() {
     // Marcar todas as notificações como lidas
     const marcarTodasLidas = async () => {
         try {
-            await axios.patch(`${API_BASE}/notificacoes/marcar-todas-lidas`, {}, authHeader());
+            await axios.patch(`${API_BASE}/notificacoes/me/todas-lidas`, {}, authHeader());
             setNotificacoes(prev => prev.map(notif => ({...notif, lida: true})));
         } catch (error) {
             console.error("Erro ao marcar todas notificações como lidas:", error);

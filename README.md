@@ -28,6 +28,7 @@ Sistema completo para gerenciamento de academias, desenvolvido como Trabalho de 
 - **Notificações Automáticas** — Lembretes de pagamento e treino via e-mail (SMTP)
 - **Feedback** — Envio, resposta e arquivamento de feedbacks de alunos
 - **Dashboard** — Métricas em tempo real, gráficos de receita e aniversariantes do mês
+- **Inadimplência** — Painel dedicado com lista de alunos com pagamento vencido, dias de atraso, valor em aberto e pagamento rápido com um clique; link direto para WhatsApp do aluno
 - **Termo de Matrícula** — Geração de documento PDF assinável
 
 ---

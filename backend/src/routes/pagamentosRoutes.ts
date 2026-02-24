@@ -1,12 +1,15 @@
 // backend/src/routes/pagamentosRoutes.ts
 import express from "express";
-import { authenticateUser } from "../middleware/auth";
+import { authenticateUser, authorizeRoles } from "../middleware/auth";
 import * as pagamentosController from "../controllers/pagamentosController";
 
 const router = express.Router();
 
-router.post('/alunos/:id/pagamentos', authenticateUser, pagamentosController.registrarPagamento);
-router.get('/alunos/:id/pagamentos', authenticateUser, pagamentosController.getPagamentosPorAluno);
-router.delete('/pagamentos/:id', authenticateUser, pagamentosController.deletePagamento);
+// Administradores e atendentes podem registrar e consultar pagamentos
+router.post('/alunos/:id/pagamentos', authenticateUser, authorizeRoles(['administrador', 'atendente']), pagamentosController.registrarPagamento);
+router.get('/alunos/:id/pagamentos', authenticateUser, authorizeRoles(['administrador', 'atendente']), pagamentosController.getPagamentosPorAluno);
+
+// Apenas administradores podem excluir pagamentos
+router.delete('/pagamentos/:id', authenticateUser, authorizeRoles(['administrador']), pagamentosController.deletePagamento);
 
 export default router;
