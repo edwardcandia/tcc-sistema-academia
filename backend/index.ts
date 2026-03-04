@@ -26,6 +26,7 @@ import notificacoesRoutes from './src/routes/notificacoesRoutes';
 import notificacoesAutomaticasRoutes from './src/routes/notificacoesAutomaticasRoutes';
 import feedbackRoutes from './src/routes/feedbackRoutes';
 import termoMatriculaRoutes from './src/routes/termoMatriculaRoutes';
+import alunosModelosRoutes from './src/routes/alunosModelosRoutes';
 
 const logsDir = path.join(__dirname, 'logs');
 fs.ensureDirSync(logsDir);
@@ -75,6 +76,7 @@ app.use(API_PREFIX, dashboardRoutes);
 app.use(API_PREFIX, pagamentosRoutes);
 app.use(API_PREFIX, exerciciosRoutes);
 app.use(API_PREFIX, modelosTreinoRoutes);
+app.use(API_PREFIX, alunosModelosRoutes);
 app.use(`${API_PREFIX}/registro-treino`, registroTreinoRoutes);
 app.use(`${API_PREFIX}/notificacoes`, notificacoesRoutes);
 app.use(`${API_PREFIX}/notificacoes-automaticas`, notificacoesAutomaticasRoutes);
