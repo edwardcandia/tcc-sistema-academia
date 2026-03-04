@@ -14,6 +14,8 @@ import {
     DirectionsRun, PlayArrow, Done
 } from '@mui/icons-material';
 
+import { API_BASE } from '../services/api';
+
 function AlunoTreinoDetalhePage() {
     const { id } = useParams();
     const { authHeader } = useAuth();
@@ -33,11 +35,11 @@ function AlunoTreinoDetalhePage() {
         const fetchTreinoDetalhes = async () => {
             try {
                 setLoading(true);
+                // Busca o modelo de treino com os exercícios inclusos
                 const responseTreino = await axios.get(`${API_BASE}/modelos-treino/${id}`, authHeader());
                 setTreino(responseTreino.data);
-                
-                const responseExercicios = await axios.get(`${API_BASE}/modelos-treino/${id}/exercicios`, authHeader());
-                setExercicios(responseExercicios.data);
+                // Os exercícios já vêm na resposta do modelo
+                setExercicios(Array.isArray(responseTreino.data.exercicios) ? responseTreino.data.exercicios : []);
             } catch (error) {
                 console.error("Erro ao buscar detalhes do treino:", error);
                 // Dados de exemplo caso a API falhe

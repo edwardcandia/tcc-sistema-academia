@@ -5,8 +5,8 @@ import { authenticateUser, authorizeRoles } from "../middleware/auth";
 
 const router = express.Router();
 
-// Rotas protegidas para administradores
-router.use('/modelos-treino', authenticateUser, authorizeRoles(['administrador']));
+// Rotas protegidas para administradores e atendentes
+router.use('/modelos-treino', authenticateUser, authorizeRoles(['administrador', 'atendente']));
 
 router.route('/modelos-treino')
     .post(modelosTreinoController.createModeloTreino)
@@ -20,11 +20,8 @@ router.post('/modelos-treino/:id/exercicios', modelosTreinoController.addExercic
 router.delete('/modelos-treino/exercicios/:exercicioDoModeloId', modelosTreinoController.removeExercicioDoModelo);
 router.post('/modelos-treino/:id/duplicar', modelosTreinoController.duplicateModeloTreino);
 
-// Rotas para atribuição de modelos a alunos (apenas para administradores)
-router.post('/modelos-treino/alunos/:alunoId/:modeloTreinoId', authenticateUser, authorizeRoles(['administrador']), modelosTreinoController.assignModeloTreinoToAluno);
-router.delete('/modelos-treino/alunos/:alunoId/:modeloTreinoId', authenticateUser, authorizeRoles(['administrador']), modelosTreinoController.removeModeloTreinoFromAluno);
-
-// Rota para alunos consultarem seus próprios modelos de treino (autenticação removida)
+// Rota para buscar modelos de treino de um aluno (mantida aqui por compatibilidade)
+// NOTA: Para associar/desassociar modelos de alunos, use as rotas em alunosModelosRoutes
 router.get('/alunos/:alunoId/modelos-treino', modelosTreinoController.getModelosTreinoByAlunoId);
 
 export default router;
