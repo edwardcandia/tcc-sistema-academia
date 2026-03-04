@@ -9,11 +9,13 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import PaymentIcon from '@mui/icons-material/Payment';
 import HistoryIcon from '@mui/icons-material/History';
+import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
 import { IMaskInput } from 'react-imask';
 import { API_BASE } from '../services/api';
+import AlunoModelosDialog from './AlunoModelosDialog';
 
 // --- Adaptadores para as máscaras ---
 const CpfMask = forwardRef(function CpfMask(props, ref) {
@@ -51,6 +53,8 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
   const [historicoModalOpen, setHistoricoModalOpen] = useState(false);
   const [historicoPagamentos, setHistoricoPagamentos] = useState([]);
   const [alunoParaHistorico, setAlunoParaHistorico] = useState(null);
+  const [modelosDialogOpen, setModelosDialogOpen] = useState(false);
+  const [alunoParaModelos, setAlunoParaModelos] = useState(null);
 
   const handleOpenHistoricoModal = async (aluno) => {
     setAlunoParaHistorico(aluno);
@@ -63,6 +67,15 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
     }
   };
   const handleCloseHistoricoModal = () => setHistoricoModalOpen(false);
+
+  const handleOpenModelosDialog = (aluno) => {
+    setAlunoParaModelos(aluno);
+    setModelosDialogOpen(true);
+  };
+  const handleCloseModelosDialog = () => {
+    setModelosDialogOpen(false);
+    setAlunoParaModelos(null);
+  };
 
   const handleDeletePagamento = async (pagamentoId) => {
     if (window.confirm('Tem certeza que deseja excluir este pagamento?')) {
@@ -168,6 +181,7 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
                 <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{aluno.email}</TableCell>
                 <TableCell><Chip label={aluno.status_pagamento.replace('_', ' ')} color={getStatusColor(aluno.status_pagamento)} size="small" /></TableCell>
                 <TableCell align="right">
+                  <IconButton onClick={() => handleOpenModelosDialog(aluno)} color="secondary" title="Gerenciar Treinos" size="small"><FitnessCenterIcon fontSize="small" /></IconButton>
                   <IconButton onClick={() => handleOpenPagamentoModal(aluno)} color="success" title="Registrar Pagamento" size="small"><PaymentIcon fontSize="small" /></IconButton>
                   <IconButton onClick={() => handleOpenHistoricoModal(aluno)} color="default" title="Histórico de Pagamentos" size="small"><HistoryIcon fontSize="small" /></IconButton>
                   <IconButton onClick={() => handleOpenEditModal(aluno)} color="primary" title="Editar Aluno" size="small"><EditIcon fontSize="small" /></IconButton>
@@ -243,6 +257,14 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
             <Button onClick={handleCloseHistoricoModal} sx={{ mt: 2, alignSelf: 'flex-end' }}>Fechar</Button>
           </Box>
         </Modal>
+      )}
+
+      {alunoParaModelos && (
+        <AlunoModelosDialog
+          open={modelosDialogOpen}
+          onClose={handleCloseModelosDialog}
+          aluno={alunoParaModelos}
+        />
       )}
     </>
   );
