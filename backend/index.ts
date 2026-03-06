@@ -56,7 +56,7 @@ app.use(cors({
         if (corsOrigins.includes(origin)) return callback(null, true);
         callback(new Error('Not allowed by CORS'));
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(compression());
