@@ -19,10 +19,26 @@ import ModeloTreinoDetalhePage from './pages/ModeloTreinoDetalhePage';
 import NotificacoesAutomaticasPage from './pages/NotificacoesAutomaticasPage';
 import InadimplentesPage from './pages/InadimplentesPage';
 import UsuariosPage from './pages/UsuariosPage';
+import AlunoLoginPage from './pages/AlunoLoginPage';
+import AlunoDashboardPage from './pages/AlunoDashboardPage';
+import AlunoTreinoDetalhePage from './pages/AlunoTreinoDetalhePage';
 
-function PrivateRoute({ children, roles }) {
-  const { token, user } = useAuth();
-  if (!token || !user) return <Navigate to="/login" />;
+function PrivateRoute({ children, roles, alunoOnly = false }) {
+  const { token, user, aluno } = useAuth();
+  
+  // Se não está autenticado, redireciona para o login apropriado
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  
+  // Se a rota é exclusiva para aluno
+  if (alunoOnly) {
+    if (!aluno) return <Navigate to="/login" />;
+    return children;
+  }
+  
+  // Se a rota é para admin/atendente
+  if (!user) return <Navigate to="/aluno-login" />;
   if (roles && !roles.includes(user.cargo)) return <Navigate to="/dashboard" />;
   return children;
 }
@@ -45,6 +61,17 @@ function App() {
         <ErrorBoundary>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/aluno-login" element={<AlunoLoginPage />} />
+            
+            {/* Rotas do Painel do Aluno */}
+            <Route path="/aluno/dashboard" element={
+              <PrivateRoute alunoOnly={true}><AlunoDashboardPage /></PrivateRoute>
+            } />
+            <Route path="/aluno/treinos/:id" element={
+              <PrivateRoute alunoOnly={true}><AlunoTreinoDetalhePage /></PrivateRoute>
+            } />
+
+            {/* Rotas Admin/Atendente */}
             <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
               <Route index element={<Navigate to="/dashboard" />} />
               <Route path="dashboard" element={<DashboardPage />} />

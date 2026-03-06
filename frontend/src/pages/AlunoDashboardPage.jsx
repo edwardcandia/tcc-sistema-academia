@@ -217,7 +217,7 @@ function AlunoDashboardPage() {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
+        navigate('/aluno-login');
     };
     
     // Marcar notificação como lida
