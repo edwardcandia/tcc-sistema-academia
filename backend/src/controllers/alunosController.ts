@@ -62,6 +62,11 @@ const updateAluno = asyncHandler(async (req: Request, res: Response) => {
 
 const deleteAluno = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
+    
+    if (req.user?.cargo !== 'administrador') {
+        throw new ApiError(ErrorTypes.FORBIDDEN.code, 'Apenas administradores podem resetar senha.');
+    }
+    
     const result = await db.query('DELETE FROM alunos WHERE id = $1', [id]);
     if (result.rowCount === 0) {
         throw new ApiError(ErrorTypes.NOT_FOUND.code, 'Aluno não encontrado.');
@@ -76,7 +81,10 @@ const deleteAluno = asyncHandler(async (req: Request, res: Response) => {
 const resetSenhaAluno = asyncHandler(async (req: Request, res: Response) => {
     const { id } = req.params;
     const { senha, usarCpf } = req.body;
-    
+
+    if (req.user?.cargo !== 'administrador') {
+        throw new ApiError(ErrorTypes.FORBIDDEN.code, 'Apenas administradores podem resetar senha.');
+    }
     // Busca o aluno
     const alunoResult = await db.query('SELECT cpf FROM alunos WHERE id = $1', [id]);
     if (alunoResult.rows.length === 0) {
