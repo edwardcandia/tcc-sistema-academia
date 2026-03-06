@@ -1,8 +1,7 @@
-// frontend/src/components/AlunosForm.jsx
 import React, { useState, forwardRef } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { TextField, Button, Box, Typography, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { TextField, Button, Box, Typography, Select, MenuItem, InputLabel, FormControl, Alert } from '@mui/material';
 import { useAuth } from '../context/AuthContext';
 import { IMaskInput } from 'react-imask';
 import { API_BASE } from '../services/api';
@@ -64,6 +63,12 @@ function AlunosForm({ planos, onAlunoAdicionado }) {
   return (
     <Box component="form" onSubmit={handleSubmit} sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 4, p: 2, border: '1px solid #ddd', borderRadius: '8px' }}>
       <Typography variant="h6">Cadastrar Novo Aluno</Typography>
+      
+      <Alert severity="info" sx={{ mb: 1 }}>
+        A senha inicial do aluno será automaticamente definida como o <strong>CPF (apenas números)</strong>.
+        O aluno poderá fazer login imediatamente após o cadastro.
+      </Alert>
+      
       <TextField name="nome_completo" label="Nome Completo" value={formData.nome_completo} onChange={handleChange} required />
       <TextField name="cpf" label="CPF" value={formData.cpf} onChange={handleChange} required InputProps={{ inputComponent: CpfMask }} />
       <TextField name="email" type="email" label="Email" value={formData.email} onChange={handleChange} required />

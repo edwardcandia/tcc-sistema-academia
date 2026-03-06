@@ -10,6 +10,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import PaymentIcon from '@mui/icons-material/Payment';
 import HistoryIcon from '@mui/icons-material/History';
 import FitnessCenterIcon from '@mui/icons-material/FitnessCenter';
+import VpnKeyIcon from '@mui/icons-material/VpnKey';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 import { format } from 'date-fns';
@@ -148,6 +149,30 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
     }
   };
 
+  const handleResetSenha = async (aluno) => {
+    const confirmacao = window.confirm(
+      `Resetar senha do aluno ${aluno.nome_completo}?\n\n` +
+      `A senha será redefinida para o CPF (apenas números): ${aluno.cpf.replace(/\D/g, '')}`
+    );
+    
+    if (confirmacao) {
+      try {
+        await axios.patch(
+          `${API_BASE}/alunos/${aluno.id}/reset-senha`,
+          { usarCpf: true },
+          authHeader()
+        );
+        toast.success(
+          `Senha resetada com sucesso!\n` +
+          `Nova senha: ${aluno.cpf.replace(/\D/g, '')}`,
+          { autoClose: 5000 }
+        );
+      } catch (error) {
+        toast.error('Falha ao resetar senha.');
+      }
+    }
+  };
+
   const getStatusColor = (status) => {
     if (status === 'atrasado') return 'error';
     if (status === 'em_dia') return 'success';
@@ -184,6 +209,9 @@ function AlunosList({ alunos, planos, onAlunoAtualizado, onAlunoExcluido }) {
                   <IconButton onClick={() => handleOpenModelosDialog(aluno)} color="secondary" title="Gerenciar Treinos" size="small"><FitnessCenterIcon fontSize="small" /></IconButton>
                   <IconButton onClick={() => handleOpenPagamentoModal(aluno)} color="success" title="Registrar Pagamento" size="small"><PaymentIcon fontSize="small" /></IconButton>
                   <IconButton onClick={() => handleOpenHistoricoModal(aluno)} color="default" title="Histórico de Pagamentos" size="small"><HistoryIcon fontSize="small" /></IconButton>
+                  {isAdmin && ( 
+                    <IconButton onClick={() => handleResetSenha(aluno)} color="warning" title="Resetar Senha (CPF)" size="small"><VpnKeyIcon fontSize="small" /></IconButton>
+                  )}
                   <IconButton onClick={() => handleOpenEditModal(aluno)} color="primary" title="Editar Aluno" size="small"><EditIcon fontSize="small" /></IconButton>
                   {isAdmin && (
                     <IconButton onClick={() => handleDelete(aluno.id)} color="error" title="Excluir Aluno" size="small"><DeleteIcon fontSize="small" /></IconButton>
