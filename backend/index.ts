@@ -27,6 +27,7 @@ import notificacoesAutomaticasRoutes from './src/routes/notificacoesAutomaticasR
 import feedbackRoutes from './src/routes/feedbackRoutes';
 import termoMatriculaRoutes from './src/routes/termoMatriculaRoutes';
 import alunosModelosRoutes from './src/routes/alunosModelosRoutes';
+import portalRoutes from './src/routes/portalRoutes';
 
 const logsDir = path.join(__dirname, 'logs');
 fs.ensureDirSync(logsDir);
@@ -82,6 +83,7 @@ app.use(`${API_PREFIX}/notificacoes`, notificacoesRoutes);
 app.use(`${API_PREFIX}/notificacoes-automaticas`, notificacoesAutomaticasRoutes);
 app.use(`${API_PREFIX}/feedback`, feedbackRoutes);
 app.use(`${API_PREFIX}/termo-matricula`, termoMatriculaRoutes);
+app.use(`${API_PREFIX}/portal`, portalRoutes);
 
 app.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({

@@ -26,7 +26,6 @@ function AlunoDashboardPage() {
     const [meusPagamentos, setMeusPagamentos] = useState([]);
     const [meusTreinos, setMeusTreinos] = useState([]);
     const [loadingTreinos, setLoadingTreinos] = useState(true);
-    const [treinoSelecionado, setTreinoSelecionado] = useState(null);
     const [loading, setLoading] = useState(true);
     const [tabValue, setTabValue] = useState(0);
     const [progresso, setProgresso] = useState([]);
@@ -77,20 +76,9 @@ function AlunoDashboardPage() {
             );
             
             if (response.data.success) {
-                // Adiciona um registro local ao progresso para feedback imediato
-                const novoProgresso = [...progresso, {
-                    id: response.data.id,
-                    data: treinoRealizado.data,
-                    treino_id: treinoRealizado.treino_id,
-                    treino_nome: meusTreinos.find(t => t.id === treinoRealizado.treino_id)?.nome || "Treino",
-                    duracao: treinoRealizado.duracao,
-                    avaliacao: treinoRealizado.avaliacao
-                }];
-                
-                setProgresso(novoProgresso);
+                // Recarregar histórico após salvar
+                fetchHistoricoTreinos();
                 handleFecharDialogo();
-                
-                // Mostrar mensagem de sucesso
                 alert("Treino registrado com sucesso!");
             }
         } catch (error) {
@@ -110,26 +98,6 @@ function AlunoDashboardPage() {
                 ]);
                 setMeusDados(resDados.data);
                 setMeusPagamentos(resPagamentos.data);
-                
-                // Simulação de progresso
-                setProgresso([
-                    {
-                        id: 1,
-                        data: '2025-09-28',
-                        treino_id: '1',
-                        treino_nome: 'Treino A - Peito e Tríceps',
-                        duracao: '45',
-                        avaliacao: 4
-                    },
-                    {
-                        id: 2,
-                        data: '2025-09-30',
-                        treino_id: '2',
-                        treino_nome: 'Treino B - Costas e Bíceps',
-                        duracao: '50',
-                        avaliacao: 5
-                    }
-                ]);
             } catch (error) {
                 console.error("Erro ao buscar dados do portal do aluno:", error);
             } finally {
@@ -165,37 +133,19 @@ function AlunoDashboardPage() {
     }, [aluno, logout]);
     
     // Carregar histórico de treinos realizados
-    useEffect(() => {
-        const fetchHistoricoTreinos = async () => {
-            if (!authHeader || !aluno) return;
-            try {
-                const response = await axios.get(`${API_BASE}/registro-treino/historico`, authHeader());
-                if (response.data.success) {
-                    setProgresso(response.data.data);
-                }
-            } catch (error) {
-                console.error("Erro ao buscar histórico de treinos:", error);
-                // Se falhar a API, vamos manter alguns dados de exemplo para visualização
-                setProgresso([
-                    {
-                        id: 1,
-                        data_realizacao: '2025-09-28',
-                        treino_id: '1',
-                        treino_nome: 'Treino A - Peito e Tríceps',
-                        duracao: '45',
-                        avaliacao: 4
-                    },
-                    {
-                        id: 2,
-                        data_realizacao: '2025-09-30',
-                        treino_id: '2',
-                        treino_nome: 'Treino B - Costas e Bíceps',
-                        duracao: '50',
-                        avaliacao: 5
-                    }
-                ]);
+    const fetchHistoricoTreinos = async () => {
+        if (!authHeader || !aluno) return;
+        try {
+            const response = await axios.get(`${API_BASE}/registro-treino/historico`, authHeader());
+            if (response.data.success) {
+                setProgresso(response.data.data);
             }
-        };
+        } catch (error) {
+            console.error("Erro ao buscar histórico de treinos:", error);
+        }
+    };
+
+    useEffect(() => {
         fetchHistoricoTreinos();
     }, [authHeader, aluno]);
     
@@ -242,6 +192,12 @@ function AlunoDashboardPage() {
         }
     };
 
+    const formatarData = (dataStr) => {
+        if (!dataStr) return "";
+        const data = new Date(dataStr);
+        return data.toLocaleDateString('pt-BR');
+    };
+
     if (loading) {
         return (
             <Container>
@@ -262,7 +218,7 @@ function AlunoDashboardPage() {
                             <Grid item xs={12} sm={6} md={3}>
                                 <Card 
                                   sx={{ bgcolor: '#e8f5e9', color: '#2e7d32', height: '100%', cursor: 'pointer' }}
-                                  onClick={() => navigate('/aluno/treinos')}
+                                  onClick={() => setTabValue(1)}
                                 >
                                     <CardContent>
                                         <FitnessCenter />
@@ -274,7 +230,10 @@ function AlunoDashboardPage() {
                             </Grid>
 
                             <Grid item xs={12} sm={6} md={3}>
-                                <Card sx={{ bgcolor: '#fff3e0', color: '#e65100', height: '100%' }}>
+                                <Card 
+                                    sx={{ bgcolor: '#fff3e0', color: '#e65100', height: '100%', cursor: 'pointer' }}
+                                    onClick={() => setTabValue(2)}
+                                >
                                     <CardContent>
                                         <TrendingUp />
                                         <Typography variant="h6" gutterBottom>Progresso</Typography>
@@ -283,7 +242,7 @@ function AlunoDashboardPage() {
                                         </Typography>
                                         <LinearProgress 
                                             variant="determinate" 
-                                            value={progresso.length > 0 ? 75 : 0} 
+                                            value={progresso.length > 0 ? Math.min(progresso.length * 10, 100) : 0} 
                                             sx={{ mt: 1 }}
                                         />
                                     </CardContent>
@@ -293,9 +252,9 @@ function AlunoDashboardPage() {
                                 <Card sx={{ bgcolor: '#f3e5f5', color: '#6a1b9a', height: '100%' }}>
                                     <CardContent>
                                         <Favorite />
-                                        <Typography variant="h6" gutterBottom>Saúde</Typography>
-                                        <Typography variant="h4">Bom</Typography>
-                                        <Typography variant="body2">baseado na regularidade</Typography>
+                                        <Typography variant="h6" gutterBottom>Frequência</Typography>
+                                        <Typography variant="h4">{progresso.length}</Typography>
+                                        <Typography variant="body2">treinos realizados</Typography>
                                     </CardContent>
                                 </Card>
                             </Grid>
@@ -349,7 +308,7 @@ function AlunoDashboardPage() {
                                             </ListItemIcon>
                                             <ListItemText 
                                                 primary={notificacao.texto} 
-                                                secondary={new Date(notificacao.created_at).toLocaleDateString()}
+                                                secondary={formatarData(notificacao.created_at)}
                                             />
                                         </ListItem>
                                     ))}
@@ -361,7 +320,7 @@ function AlunoDashboardPage() {
                         
                         {/* Próximo Treino */}
                         <Paper sx={{ p: 2, mb: 3 }}>
-                            <Typography variant="h6" gutterBottom>Próximo Treino</Typography>
+                            <Typography variant="h6" gutterBottom>Sugestão de Treino</Typography>
                             <Divider sx={{ mb: 2 }} />
                             {meusTreinos.length > 0 ? (
                                 <Box>
@@ -376,13 +335,13 @@ function AlunoDashboardPage() {
                                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                                 <DirectionsRun sx={{ mr: 1 }} color="action" />
                                                 <Typography variant="body2">
-                                                    {meusTreinos[0].total_exercicios || "5"} exercícios
+                                                    Objetivo: {meusTreinos[0].objetivo || "Não informado"}
                                                 </Typography>
                                             </Box>
                                             <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                                 <AccessTime sx={{ mr: 1 }} color="action" />
                                                 <Typography variant="body2">
-                                                    Duração estimada: {meusTreinos[0].duracao_estimada || "45-60"} min
+                                                    Nível: {meusTreinos[0].nivel_dificuldade || "Não informado"}
                                                 </Typography>
                                             </Box>
                                         </Grid>
@@ -418,7 +377,7 @@ function AlunoDashboardPage() {
                                 <Typography variant="h6">Progresso Recente</Typography>
                                 <Button 
                                     color="primary"
-                                    onClick={() => setTabValue(1)}
+                                    onClick={() => setTabValue(2)}
                                     endIcon={<ArrowForward />}
                                     size="small"
                                 >
@@ -428,18 +387,18 @@ function AlunoDashboardPage() {
                             <Divider sx={{ mb: 2 }} />
                             {progresso.length > 0 ? (
                                 <List>
-                                    {progresso.slice(0, 2).map(p => (
+                                    {progresso.slice(0, 3).map(p => (
                                         <ListItem key={p.id}>
                                             <ListItemIcon>
                                                 <CheckCircle color="success" />
                                             </ListItemIcon>
                                             <ListItemText 
-                                                primary={p.treino_nome}
-                                                secondary={`Realizado em ${p.data} • Duração: ${p.duracao} minutos`}
+                                                primary={p.nome_treino}
+                                                secondary={`Realizado em ${formatarData(p.data_realizacao)} • Duração: ${p.duracao} minutos`}
                                             />
                                             <Chip
                                                 icon={<EmojiEvents />}
-                                                label={`Avaliação: ${p.avaliacao}/5`}
+                                                label={`Nota: ${p.avaliacao}/5`}
                                                 size="small"
                                                 color={p.avaliacao >= 4 ? "success" : "default"}
                                             />
@@ -492,7 +451,7 @@ function AlunoDashboardPage() {
                                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                                     <FitnessCenter fontSize="small" sx={{ mr: 1 }} color="action" />
                                                     <Typography variant="body2">
-                                                        {treino.total_exercicios || "5"} exercícios
+                                                        Nível: {treino.nivel_dificuldade || "Não informado"}
                                                     </Typography>
                                                 </Box>
                                             </CardContent>
@@ -529,7 +488,7 @@ function AlunoDashboardPage() {
                     <>
                         <Paper sx={{ p: 2, mb: 3 }}>
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                                <Typography variant="h6">Meu Progresso</Typography>
+                                <Typography variant="h6">Meu Histórico de Treinos</Typography>
                                 <Button
                                     variant="contained"
                                     startIcon={<Add />}
@@ -541,7 +500,7 @@ function AlunoDashboardPage() {
                             <Divider sx={{ mb: 2 }} />
                             {progresso.length > 0 ? (
                                 <List>
-                                    {progresso.slice(0, 5).map(p => (
+                                    {progresso.map(p => (
                                         <ListItem key={p.id} sx={{ bgcolor: '#f5f5f5', mb: 1, borderRadius: 1 }}>
                                             <ListItemIcon>
                                                 <CheckCircle color="success" />
@@ -549,10 +508,10 @@ function AlunoDashboardPage() {
                                             <ListItemText 
                                                 primary={
                                                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                        <Typography variant="subtitle1">{p.treino_nome}</Typography>
+                                                        <Typography variant="subtitle1">{p.nome_treino}</Typography>
                                                         <Chip
                                                             size="small"
-                                                            label={`${p.data_realizacao}`}
+                                                            label={formatarData(p.data_realizacao)}
                                                             color="primary"
                                                             variant="outlined"
                                                         />
@@ -571,6 +530,11 @@ function AlunoDashboardPage() {
                                                                 />
                                                             ))}
                                                         </Box>
+                                                        {p.observacoes && (
+                                                            <Typography variant="body2" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                                                Obs: {p.observacoes}
+                                                            </Typography>
+                                                        )}
                                                     </>
                                                 }
                                             />
@@ -606,8 +570,8 @@ function AlunoDashboardPage() {
                                     <Typography variant="h5">{meusDados?.nome_completo}</Typography>
                                     <Typography variant="body1" color="text.secondary">{meusDados?.email}</Typography>
                                     <Chip 
-                                        label="Aluno Ativo" 
-                                        color="success" 
+                                        label={meusDados?.status === 'ativo' ? 'Aluno Ativo' : 'Aluno Inativo'} 
+                                        color={meusDados?.status === 'ativo' ? 'success' : 'error'} 
                                         size="small"
                                         sx={{ mt: 1 }}
                                     />
@@ -638,8 +602,8 @@ function AlunoDashboardPage() {
                                     <Typography variant="body1">{meusDados?.data_nascimento || "Não informada"}</Typography>
                                 </Grid>
                                 <Grid item xs={12} sm={6}>
-                                    <Typography variant="subtitle2" color="text.secondary">Gênero</Typography>
-                                    <Typography variant="body1">{meusDados?.genero || "Não informado"}</Typography>
+                                    <Typography variant="subtitle2" color="text.secondary">Matrícula</Typography>
+                                    <Typography variant="body1">{meusDados?.data_matricula || "Não informada"}</Typography>
                                 </Grid>
                             </Grid>
                         </Paper>
@@ -662,11 +626,11 @@ function AlunoDashboardPage() {
                                         {meusPagamentos.length > 0 ? meusPagamentos.map(pg => (
                                             <ListItem key={pg.id}>
                                                 <ListItemIcon>
-                                                    <Payment color="success" />
+                                                    <Payment color={pg.status === 'pago' ? "success" : "warning"} />
                                                 </ListItemIcon>
                                                 <ListItemText 
                                                     primary={`Pagamento de R$ ${parseFloat(pg.valor).toFixed(2)}`} 
-                                                    secondary={`Realizado em ${pg.data_pagamento}`} 
+                                                    secondary={`${pg.data_pagamento ? `Realizado em ${pg.data_pagamento}` : `Vencimento: ${pg.data_vencimento}`} • Status: ${pg.status}`} 
                                                 />
                                             </ListItem>
                                         )) : (
