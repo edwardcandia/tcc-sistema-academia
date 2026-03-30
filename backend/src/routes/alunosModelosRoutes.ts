@@ -5,49 +5,85 @@ import * as alunosModelosController from "../controllers/alunosModelosController
 
 const router = express.Router();
 
-// Apenas administradores e atendentes podem associar modelos a alunos
+/**
+ * @swagger
+ * /api/alunos-modelos:
+ *   post:
+ *     summary: Associa um modelo de treino a um aluno
+ *     tags: [AlunosModelos]
+ */
 router.post(
-    '/alunos-modelos',
+    '/',
     authenticateUser,
     authorizeRoles(['administrador', 'atendente']),
     alunosModelosController.associarModeloAoAluno
 );
 
-// Buscar todos os modelos de um aluno específico
+/**
+ * @swagger
+ * /api/alunos-modelos/aluno/{aluno_id}:
+ *   get:
+ *     summary: Busca todos os modelos de um aluno específico
+ *     tags: [AlunosModelos]
+ */
 router.get(
-    '/alunos/:aluno_id/modelos',
+    '/aluno/:aluno_id',
     authenticateUser,
     authorizeRoles(['administrador', 'atendente']),
     alunosModelosController.getModelosDoAluno
 );
 
-// Buscar todos os alunos de um modelo específico
+/**
+ * @swagger
+ * /api/alunos-modelos/modelo/{modelo_id}:
+ *   get:
+ *     summary: Busca todos os alunos de um modelo específico
+ *     tags: [AlunosModelos]
+ */
 router.get(
-    '/modelos/:modelo_id/alunos',
+    '/modelo/:modelo_id',
     authenticateUser,
     authorizeRoles(['administrador', 'atendente']),
     alunosModelosController.getAlunosDoModelo
 );
 
-// Atualizar uma associação existente
+/**
+ * @swagger
+ * /api/alunos-modelos/{id}:
+ *   put:
+ *     summary: Atualiza uma associação existente
+ *     tags: [AlunosModelos]
+ */
 router.put(
-    '/alunos-modelos/:id',
+    '/:id',
     authenticateUser,
     authorizeRoles(['administrador', 'atendente']),
     alunosModelosController.atualizarAssociacao
 );
 
-// Remover uma associação
+/**
+ * @swagger
+ * /api/alunos-modelos/{id}:
+ *   delete:
+ *     summary: Remover uma associação
+ *     tags: [AlunosModelos]
+ */
 router.delete(
-    '/alunos-modelos/:id',
+    '/:id',
     authenticateUser,
     authorizeRoles(['administrador', 'atendente']),
     alunosModelosController.removerAssociacao
 );
 
-// Listar todas as associações (útil para dashboards)
+/**
+ * @swagger
+ * /api/alunos-modelos:
+ *   get:
+ *     summary: Listar todas as associações
+ *     tags: [AlunosModelos]
+ */
 router.get(
-    '/alunos-modelos',
+    '/',
     authenticateUser,
     authorizeRoles(['administrador', 'atendente']),
     alunosModelosController.getAllAssociacoes

@@ -77,7 +77,7 @@ app.use(API_PREFIX, dashboardRoutes);
 app.use(API_PREFIX, pagamentosRoutes);
 app.use(API_PREFIX, exerciciosRoutes);
 app.use(API_PREFIX, modelosTreinoRoutes);
-app.use(API_PREFIX, alunosModelosRoutes);
+app.use(`${API_PREFIX}/alunos-modelos`, alunosModelosRoutes);
 app.use(`${API_PREFIX}/registro-treino`, registroTreinoRoutes);
 app.use(`${API_PREFIX}/notificacoes`, notificacoesRoutes);
 app.use(`${API_PREFIX}/notificacoes-automaticas`, notificacoesAutomaticasRoutes);
