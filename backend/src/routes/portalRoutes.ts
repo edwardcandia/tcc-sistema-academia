@@ -14,5 +14,7 @@ const router = express.Router();
 // Rotas do portal protegidas por token de aluno
 router.get('/meus-dados', authenticateAluno, portalController.getMeusDados);
 router.get('/meus-pagamentos', authenticateAluno, portalController.getMeusPagamentos);
+router.get('/meus-treinos', authenticateAluno, portalController.getMeusModelos);
+router.get('/meus-treinos/:id', authenticateAluno, portalController.getDetalhesMeuTreino);
 
 export default router;
