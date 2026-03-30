@@ -12,7 +12,7 @@ import {
   FitnessCenter, CalendarMonth, CheckCircle, AccessTime, 
   Assignment, TrendingUp, Person, Payment, Notifications, 
   ArrowForward, Add, Edit, EmojiEvents, Favorite, DirectionsRun,
-  Home, Info, Feedback as FeedbackIcon
+  Home, Info, Feedback as FeedbackIcon, PlayArrow
 } from '@mui/icons-material';
 import AlunoProgressoCharts from '../components/AlunoProgressoCharts';
 import AlunoFeedbackForm from '../components/AlunoFeedbackForm';
@@ -70,8 +70,15 @@ function AlunoDashboardPage() {
     // Função para salvar o registro de treino
     const handleSalvarTreinoRealizado = async () => {
         try {
+            const payload = {
+                ...treinoRealizado,
+                aluno_id: aluno?.id,
+                duracao: parseInt(treinoRealizado.duracao),
+                treino_id: parseInt(treinoRealizado.treino_id)
+            };
+
             const response = await axios.post(`${API_BASE}/registro-treino/registrar`, 
-                treinoRealizado, 
+                payload, 
                 authHeader()
             );
             
@@ -115,7 +122,7 @@ function AlunoDashboardPage() {
             try {
                 setLoadingTreinos(true);
                 const response = await axios.get(
-                    `${API_BASE}/alunos/${aluno.id}/modelos-treino`,
+                    `${API_BASE}/portal/meus-treinos`,
                     authHeader()
                 );
                 setMeusTreinos(Array.isArray(response.data) ? response.data : []);
@@ -442,34 +449,57 @@ function AlunoDashboardPage() {
                             <Grid container spacing={2}>
                                 {meusTreinos.map(treino => (
                                     <Grid item xs={12} sm={6} md={4} key={treino.id}>
-                                        <Card>
-                                            <CardContent>
-                                                <Typography variant="h6">{treino.nome}</Typography>
-                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                                    {treino.descricao || "Treino personalizado"}
+                                        <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                            <CardContent sx={{ flexGrow: 1 }}>
+                                                <Typography variant="h5" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 1 }}>
+                                                    {treino.modelo_nome || treino.nome}
                                                 </Typography>
+                                                <Typography variant="body2" color="text.secondary" sx={{ mb: 2, height: '3em', overflow: 'hidden' }}>
+                                                    {treino.modelo_descricao || treino.descricao || "Treino personalizado"}
+                                                </Typography>
+                                                <Divider sx={{ mb: 2 }} />
                                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                                     <FitnessCenter fontSize="small" sx={{ mr: 1 }} color="action" />
                                                     <Typography variant="body2">
                                                         Nível: {treino.nivel_dificuldade || "Não informado"}
                                                     </Typography>
                                                 </Box>
+                                                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                    <DirectionsRun fontSize="small" sx={{ mr: 1 }} color="action" />
+                                                    <Typography variant="body2">
+                                                        Objetivo: {treino.objetivo || "Não informado"}
+                                                    </Typography>
+                                                </Box>
                                             </CardContent>
-                                            <CardActions>
+                                            <CardActions sx={{ justifyContent: 'space-between', p: 2, bgcolor: '#f5f5f5' }}>
                                                 <Button 
                                                     size="small" 
+                                                    variant="outlined"
                                                     color="primary"
                                                     onClick={() => navigate(`/aluno/treinos/${treino.id}`)}
                                                 >
-                                                    Ver Detalhes
+                                                    Detalhes
                                                 </Button>
-                                                <Button 
-                                                    size="small" 
-                                                    color="success"
-                                                    onClick={() => handleAbrirDialogo(treino)}
-                                                >
-                                                    Registrar Treino
-                                                </Button>
+                                                <Box>
+                                                    <Button 
+                                                        size="small" 
+                                                        variant="contained"
+                                                        color="primary"
+                                                        startIcon={<PlayArrow />}
+                                                        onClick={() => navigate(`/aluno/treinos/${treino.id}`, { state: { iniciarAuto: true } })}
+                                                        sx={{ mr: 1 }}
+                                                    >
+                                                        Iniciar
+                                                    </Button>
+                                                    <Button 
+                                                        size="small" 
+                                                        variant="outlined"
+                                                        color="success"
+                                                        onClick={() => handleAbrirDialogo(treino)}
+                                                    >
+                                                        Registrar
+                                                    </Button>
+                                                </Box>
                                             </CardActions>
                                         </Card>
                                     </Grid>
