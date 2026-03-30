@@ -26,6 +26,8 @@ import notificacoesRoutes from './src/routes/notificacoesRoutes';
 import notificacoesAutomaticasRoutes from './src/routes/notificacoesAutomaticasRoutes';
 import feedbackRoutes from './src/routes/feedbackRoutes';
 import termoMatriculaRoutes from './src/routes/termoMatriculaRoutes';
+import alunosModelosRoutes from './src/routes/alunosModelosRoutes';
+import portalRoutes from './src/routes/portalRoutes';
 
 const logsDir = path.join(__dirname, 'logs');
 fs.ensureDirSync(logsDir);
@@ -55,7 +57,7 @@ app.use(cors({
         if (corsOrigins.includes(origin)) return callback(null, true);
         callback(new Error('Not allowed by CORS'));
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use(compression());
@@ -75,11 +77,13 @@ app.use(API_PREFIX, dashboardRoutes);
 app.use(API_PREFIX, pagamentosRoutes);
 app.use(API_PREFIX, exerciciosRoutes);
 app.use(API_PREFIX, modelosTreinoRoutes);
+app.use(API_PREFIX, alunosModelosRoutes);
 app.use(`${API_PREFIX}/registro-treino`, registroTreinoRoutes);
 app.use(`${API_PREFIX}/notificacoes`, notificacoesRoutes);
 app.use(`${API_PREFIX}/notificacoes-automaticas`, notificacoesAutomaticasRoutes);
 app.use(`${API_PREFIX}/feedback`, feedbackRoutes);
 app.use(`${API_PREFIX}/termo-matricula`, termoMatriculaRoutes);
+app.use(`${API_PREFIX}/portal`, portalRoutes);
 
 app.get('/health', (_req: Request, res: Response) => {
     res.status(200).json({

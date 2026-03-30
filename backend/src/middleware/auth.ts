@@ -70,3 +70,23 @@ export const authenticateAluno = (req: Request, res: Response, next: NextFunctio
         next(err);
     }
 };
+
+/**
+ * Permite acesso tanto para funcionários quanto para alunos.
+ * Popula req.user ou req.aluno dependendo do tipo de token.
+ */
+export const authenticateAny = (req: Request, res: Response, next: NextFunction): void => {
+    try {
+        const decoded: any = verifyRequestToken(req);
+        if (decoded.tipo === 'user') {
+            req.user = decoded;
+        } else if (decoded.tipo === 'aluno') {
+            req.aluno = decoded;
+        } else {
+            throw new ApiError(ErrorTypes.UNAUTHORIZED.code, 'Tipo de token inválido.');
+        }
+        next();
+    } catch (err) {
+        next(err);
+    }
+};

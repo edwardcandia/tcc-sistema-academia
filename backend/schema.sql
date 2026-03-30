@@ -88,10 +88,11 @@ CREATE TABLE itens_treino (
     id SERIAL PRIMARY KEY,
     modelo_treino_id INTEGER NOT NULL,
     exercicio_id INTEGER NOT NULL,
-    dia_semana INTEGER CHECK (dia_semana BETWEEN 1 AND 7), -- 1: Domingo, 2: Segunda, etc.
+    dia_semana INTEGER CHECK (dia_semana BETWEEN 1 AND 7), -- 1: Domingo, 2: Segunda, etc. (Opcional)
     series INTEGER NOT NULL,
     repeticoes VARCHAR(50) NOT NULL, -- Pode ser "12", "8-12", etc.
-    ordem INTEGER NOT NULL, -- Ordem de execução no dia
+    ordem INTEGER, -- Ordem de execução no dia (Opcional)
+    descanso_segundos INTEGER, -- Tempo de descanso entre séries em segundos
     observacoes TEXT,
     CONSTRAINT fk_modelo_treino FOREIGN KEY (modelo_treino_id) REFERENCES modelos_treino(id) ON DELETE CASCADE,
     CONSTRAINT fk_exercicio FOREIGN KEY (exercicio_id) REFERENCES exercicios(id)

@@ -1,8 +1,7 @@
-// frontend/src/pages/AlunoLoginPage.jsx
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { Box, TextField, Button, Typography, Container, Paper } from '@mui/material';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Box, TextField, Button, Typography, Container, Paper, Link } from '@mui/material';
 import { toast } from 'react-toastify';
 
 function AlunoLoginPage() {
@@ -14,9 +13,15 @@ function AlunoLoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Passamos o email e senha para a função de login (o parâmetro tipo não é mais necessário)
-      await login(email, senha); 
-      navigate('/aluno/dashboard'); // Redireciona para o dashboard DO ALUNO
+      const tipoUsuario = await login(email, senha);
+      
+      // Verifica se é realmente um aluno
+      if (tipoUsuario === 'aluno') {
+        navigate('/aluno/dashboard');
+      } else {
+        // Se não for aluno, faz logout e mostra erro
+        toast.error('Este login é exclusivo para alunos. Use o login administrativo.');
+      }
     } catch (error) {
       console.error('Erro no login:', error);
       toast.error('Falha no login. Verifique as suas credenciais ou se a sua senha já foi definida.');
@@ -45,6 +50,14 @@ function AlunoLoginPage() {
           <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
             Entrar
           </Button>
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              É administrador ou atendente?{' '}
+              <Link component={RouterLink} to="/login" underline="hover">
+                Acesse o Login Administrativo
+              </Link>
+            </Typography>
+          </Box>
         </Box>
       </Paper>
     </Container>

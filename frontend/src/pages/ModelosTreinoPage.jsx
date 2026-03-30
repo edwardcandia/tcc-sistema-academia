@@ -137,6 +137,13 @@ function ModelosTreinoPage() {
                       color="primary" 
                       title="Editar / Ver Exercícios"
                     >
+                      <ExpandMoreIcon />
+                    </IconButton>
+                    <IconButton 
+                      onClick={() => handleEdit(modelo.id)} 
+                      color="primary" 
+                      title="Editar / Ver Exercícios"
+                    >
                       <EditIcon />
                     </IconButton>
                     <IconButton 

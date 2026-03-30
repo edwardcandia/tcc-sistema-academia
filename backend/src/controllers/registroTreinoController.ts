@@ -1,10 +1,15 @@
-﻿import { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import db from '../config/database';
 import { ApiError, ErrorTypes, asyncHandler } from '../utils/errorHandler';
 
 export const registrarTreino = asyncHandler(async (req: Request, res: Response) => {
-    const { treino_id, data, duracao, observacoes, avaliacao, aluno_id } = req.body;
+    let { treino_id, data, duracao, observacoes, avaliacao, aluno_id } = req.body;
     
+    // Se o usuário autenticado for um aluno, usamos o ID dele do token
+    if (req.aluno) {
+        aluno_id = req.aluno.id;
+    }
+
     if (!aluno_id) {
         throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno é obrigatório');
     }
@@ -34,9 +39,6 @@ export const registrarTreino = asyncHandler(async (req: Request, res: Response) 
             RETURNING id
         `, [aluno_id, treino_id, data, duracao, observacoes, avaliacao || 5]);
         
-        // Podemos adicionar outras operações relacionadas dentro da mesma transação
-        // Por exemplo, atualizar estatísticas do aluno, registrar no histórico, etc.
-        
         return insertResult.rows[0];
     });
 
@@ -48,13 +50,17 @@ export const registrarTreino = asyncHandler(async (req: Request, res: Response) 
     });
 });
 
+/**
+ * Função utilitária para obter o aluno_id da requisição (query ou token)
+ */
+const getAlunoIdFromRequest = (req: Request): number => {
+    if (req.aluno) return req.aluno.id;
+    if (req.query.aluno_id) return parseInt(String(req.query.aluno_id));
+    throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido');
+};
+
 export const obterHistoricoTreinos = asyncHandler(async (req: Request, res: Response) => {
-    const { aluno_id } = req.query;
-    
-    // Verificar se o ID do aluno está definido
-    if (!aluno_id) {
-        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido na requisição');
-    }
+    const aluno_id = getAlunoIdFromRequest(req);
     
     // Obter histórico de treinos com paginação
     const page = parseInt(String(req.query.page || '1')) || 1;
@@ -108,12 +114,7 @@ export const obterHistoricoTreinos = asyncHandler(async (req: Request, res: Resp
 });
 
 export const obterEstatisticas = asyncHandler(async (req: Request, res: Response) => {
-    const { aluno_id } = req.query;
-    
-    // Verificar se o ID do aluno está definido
-    if (!aluno_id) {
-        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido na requisição');
-    }
+    const aluno_id = getAlunoIdFromRequest(req);
     
     // Estatísticas básicas: total de treinos, tempo total, média de avaliação
     const estatisticas = await db.query(`
@@ -160,12 +161,7 @@ export const obterEstatisticas = asyncHandler(async (req: Request, res: Response
 });
 
 export const obterFrequenciaSemanal = asyncHandler(async (req: Request, res: Response) => {
-    const { aluno_id } = req.query;
-    
-    // Verificar se o ID do aluno está definido
-    if (!aluno_id) {
-        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido na requisição');
-    }
+    const aluno_id = getAlunoIdFromRequest(req);
     
     // Obter frequência por dia da semana
     const frequencia = await db.query(`
@@ -199,12 +195,7 @@ export const obterFrequenciaSemanal = asyncHandler(async (req: Request, res: Res
 });
 
 export const obterAvaliacoes = asyncHandler(async (req: Request, res: Response) => {
-    const { aluno_id } = req.query;
-    
-    // Verificar se o ID do aluno está definido
-    if (!aluno_id) {
-        throw new ApiError(ErrorTypes.VALIDATION_ERROR.code, 'ID do aluno não fornecido na requisição');
-    }
+    const aluno_id = getAlunoIdFromRequest(req);
     
     // Obter avaliações médias por treino
     const avaliacoes = await db.query(`
@@ -236,7 +227,6 @@ export const obterHistoricoTreinosAluno = async (req: Request, res: Response): P
     try {
         const { aluno_id } = req.params;
         
-        // Verificar se o ID do aluno está definido
         if (!aluno_id) {
             return void res.status(400).json({
                 success: false,
@@ -244,7 +234,6 @@ export const obterHistoricoTreinosAluno = async (req: Request, res: Response): P
             });
         }
         
-        // Verificar se o aluno existe
         const alunoCheck = await db.query('SELECT id FROM alunos WHERE id = $1', [aluno_id]);
         if (alunoCheck.rows.length === 0) {
             return void res.status(404).json({
@@ -253,7 +242,6 @@ export const obterHistoricoTreinosAluno = async (req: Request, res: Response): P
             });
         }
         
-        // Obter histórico de treinos
         const result = await db.query(`
             SELECT 
                 rt.id,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Paper, Typography, Grid, CircularProgress, Divider, Card, CardContent } from '@mui/material';
+import { Box, Paper, Typography, Grid, CircularProgress, Divider, Card, CardContent, Alert } from '@mui/material';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -16,8 +16,6 @@ import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { TrendingUp, Timeline, FitnessCenter, CalendarMonth } from '@mui/icons-material';
-import { format, parseISO, subDays, startOfMonth, endOfMonth } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { API_BASE } from '../services/api';
 
 // Registrando componentes do Chart.js
@@ -43,7 +41,7 @@ const AlunoProgressoCharts = () => {
 
   useEffect(() => {
     const fetchProgressoData = async () => {
-      if (!authHeader() || !aluno) return;
+      if (!authHeader || !aluno) return;
       
       setLoading(true);
       setError(null);
@@ -56,23 +54,19 @@ const AlunoProgressoCharts = () => {
         );
         setEstatisticas(estatisticasRes.data.data);
         
-        // Buscar dados para gráfico de frequência nas últimas 4 semanas
-        const hoje = new Date();
-        const dataInicio = format(subDays(hoje, 28), 'yyyy-MM-dd');
-        const dataFim = format(hoje, 'yyyy-MM-dd');
-        
+        // Buscar dados para gráfico de frequência semanal
         const frequenciaRes = await axios.get(
-          `${API_BASE}/registro-treino/frequencia?dataInicio=${dataInicio}&dataFim=${dataFim}`,
+          `${API_BASE}/registro-treino/frequencia`,
           authHeader()
         );
-        setFrequenciaSemanal(frequenciaRes.data.data);
+        setFrequenciaSemanal(frequenciaRes.data.data || []);
         
         // Buscar dados para gráfico de avaliação dos treinos
         const avaliacoesRes = await axios.get(
           `${API_BASE}/registro-treino/avaliacoes`,
           authHeader()
         );
-        setAvaliacoesTreino(avaliacoesRes.data.data);
+        setAvaliacoesTreino(avaliacoesRes.data.data || []);
         
       } catch (err) {
         console.error("Erro ao buscar dados de progresso:", err);
@@ -96,33 +90,34 @@ const AlunoProgressoCharts = () => {
   if (error) {
     return (
       <Box sx={{ mt: 4 }}>
-        <Typography color="error" variant="body1">{error}</Typography>
+        <Alert severity="error">{error}</Alert>
       </Box>
     );
   }
 
   // Preparar dados para o gráfico de frequência semanal
   const dadosFrequencia = {
-    labels: frequenciaSemanal.map(item => format(parseISO(item.semana), "dd/MM", { locale: ptBR })),
+    labels: frequenciaSemanal.map(item => item.dia),
     datasets: [
       {
-        label: 'Treinos por semana',
-        data: frequenciaSemanal.map(item => item.total_treinos),
+        label: 'Total de Treinos',
+        data: frequenciaSemanal.map(item => item.total),
         backgroundColor: '#4CAF50',
         borderColor: '#2E7D32',
         borderWidth: 2,
-        tension: 0.3
+        tension: 0.3,
+        fill: true
       }
     ]
   };
 
   // Preparar dados para o gráfico de avaliação dos treinos
   const dadosAvaliacao = {
-    labels: avaliacoesTreino.map(item => item.treino_nome),
+    labels: avaliacoesTreino.map(item => item.nome),
     datasets: [
       {
         label: 'Avaliação média',
-        data: avaliacoesTreino.map(item => parseFloat(item.avaliacao_media).toFixed(1)),
+        data: avaliacoesTreino.map(item => parseFloat(item.avaliacao_media || 0).toFixed(1)),
         backgroundColor: [
           '#FF6384',
           '#36A2EB',
@@ -136,11 +131,11 @@ const AlunoProgressoCharts = () => {
 
   // Preparar dados para o gráfico de distribuição de treinos
   const dadosDistribuicao = {
-    labels: estatisticas?.treinos_por_tipo.map(item => item.nome) || [],
+    labels: estatisticas?.por_treino?.map(item => item.nome) || [],
     datasets: [
       {
-        label: 'Treinos realizados',
-        data: estatisticas?.treinos_por_tipo.map(item => parseInt(item.quantidade, 10)) || [],
+        label: 'Vezes realizado',
+        data: estatisticas?.por_treino?.map(item => parseInt(item.vezes_realizado || 0, 10)) || [],
         backgroundColor: [
           '#3498db', '#2ecc71', '#e74c3c', '#f39c12', '#9b59b6', '#1abc9c', '#d35400'
         ]
@@ -152,65 +147,46 @@ const AlunoProgressoCharts = () => {
     <Box sx={{ mt: 4 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
         <Timeline color="primary" sx={{ mr: 1 }} />
-        <Typography variant="h5">Seu Progresso</Typography>
+        <Typography variant="h5">Sua Evolução</Typography>
       </Box>
       <Divider sx={{ mb: 3 }} />
 
       {/* Cards com resumos */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={6} sm={3}>
-          <Card>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ height: '100%' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography color="text.secondary" gutterBottom>
+              <Typography color="text.secondary" gutterBottom variant="overline">
                 Total de Treinos
               </Typography>
-              <Typography variant="h3" component="div">
-                {estatisticas?.total_treinos || 0}
+              <Typography variant="h3" component="div" sx={{ color: '#2E7D32', fontWeight: 'bold' }}>
+                {estatisticas?.resumo?.total_treinos || 0}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         
-        <Grid item xs={6} sm={3}>
-          <Card>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ height: '100%' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography color="text.secondary" gutterBottom>
-                Horas Treinadas
+              <Typography color="text.secondary" gutterBottom variant="overline">
+                Minutos Treinados
               </Typography>
-              <Typography variant="h3" component="div">
-                {Math.floor((estatisticas?.tempo_total || 0) / 60)}h
+              <Typography variant="h3" component="div" sx={{ color: '#1976D2', fontWeight: 'bold' }}>
+                {estatisticas?.resumo?.tempo_total || 0}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
         
-        <Grid item xs={6} sm={3}>
-          <Card>
+        <Grid item xs={12} sm={4}>
+          <Card sx={{ height: '100%' }}>
             <CardContent sx={{ textAlign: 'center' }}>
-              <Typography color="text.secondary" gutterBottom>
-                Média Avaliação
+              <Typography color="text.secondary" gutterBottom variant="overline">
+                Média de Avaliação
               </Typography>
-              <Typography variant="h3" component="div">
-                {estatisticas?.avaliacao_media ? parseFloat(estatisticas.avaliacao_media).toFixed(1) : '0.0'}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        
-        <Grid item xs={6} sm={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography color="text.secondary" gutterBottom>
-                Treinos este mês
-              </Typography>
-              <Typography variant="h3" component="div">
-                {estatisticas?.frequencia_mensal
-                  .filter(item => {
-                    const hoje = new Date();
-                    const inicioMes = format(startOfMonth(hoje), 'yyyy-MM');
-                    return item.mes === inicioMes;
-                  })
-                  .reduce((acc, curr) => acc + parseInt(curr.quantidade), 0) || 0}
+              <Typography variant="h3" component="div" sx={{ color: '#F57C00', fontWeight: 'bold' }}>
+                {estatisticas?.resumo?.media_avaliacao || '0.0'}
               </Typography>
             </CardContent>
           </Card>
@@ -223,30 +199,31 @@ const AlunoProgressoCharts = () => {
           <Paper sx={{ p: 2, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <CalendarMonth color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6">Frequência nas últimas 4 semanas</Typography>
+              <Typography variant="h6">Frequência por Dia da Semana</Typography>
             </Box>
             <Divider sx={{ mb: 2 }} />
             <Box sx={{ height: 300, display: 'flex', justifyContent: 'center' }}>
-              <Line 
-                data={dadosFrequencia} 
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        stepSize: 1
-                      }
+              {frequenciaSemanal.length > 0 ? (
+                <Line 
+                    data={dadosFrequencia} 
+                    options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1
+                        }
+                        }
                     }
-                  },
-                  plugins: {
-                    title: {
-                      display: false
-                    }
-                  }
-                }} 
-              />
+                    }} 
+                />
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography color="text.secondary">Sem dados de frequência suficientes</Typography>
+                </Box>
+              )}
             </Box>
           </Paper>
         </Grid>
@@ -256,22 +233,28 @@ const AlunoProgressoCharts = () => {
           <Paper sx={{ p: 2, height: '100%' }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <FitnessCenter color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6">Distribuição por Tipo de Treino</Typography>
+              <Typography variant="h6">Distribuição de Treinos</Typography>
             </Box>
             <Divider sx={{ mb: 2 }} />
             <Box sx={{ height: 300, display: 'flex', justifyContent: 'center' }}>
-              <Doughnut 
-                data={dadosDistribuicao}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  plugins: {
-                    legend: {
-                      position: 'bottom'
+              {avaliacoesTreino.length > 0 ? (
+                <Doughnut 
+                    data={dadosDistribuicao}
+                    options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                        position: 'bottom'
+                        }
                     }
-                  }
-                }}
-              />
+                    }}
+                />
+              ) : (
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Typography color="text.secondary">Sem dados de distribuição suficientes</Typography>
+                </Box>
+              )}
             </Box>
           </Paper>
         </Grid>
@@ -281,26 +264,32 @@ const AlunoProgressoCharts = () => {
           <Paper sx={{ p: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
               <TrendingUp color="primary" sx={{ mr: 1 }} />
-              <Typography variant="h6">Avaliação por Tipo de Treino</Typography>
+              <Typography variant="h6">Avaliação Média por Treino</Typography>
             </Box>
             <Divider sx={{ mb: 2 }} />
             <Box sx={{ height: 300 }}>
-              <Bar 
-                data={dadosAvaliacao}
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      max: 5,
-                      ticks: {
-                        stepSize: 1
-                      }
+              {avaliacoesTreino.length > 0 ? (
+                <Bar 
+                    data={dadosAvaliacao}
+                    options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                        beginAtZero: true,
+                        max: 5,
+                        ticks: {
+                            stepSize: 1
+                        }
+                        }
                     }
-                  }
-                }}
-              />
+                    }}
+                />
+              ) : (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+                    <Typography color="text.secondary">Sem dados de avaliação suficientes</Typography>
+                </Box>
+              )}
             </Box>
           </Paper>
         </Grid>

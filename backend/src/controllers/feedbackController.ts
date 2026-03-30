@@ -69,6 +69,75 @@ export const obterFeedbacksAluno = async (req: Request, res: Response): Promise<
     }
 };
 
+export const criarFeedbackAluno = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { titulo, descricao, tipo, avaliacao } = req.body;
+        const alunoId = req.aluno?.id;
+
+        if (!alunoId) {
+            res.status(401).json({ success: false, message: 'Aluno não autenticado' });
+            return;
+        }
+
+        if (!titulo || !descricao || !tipo || !avaliacao) {
+            res.status(400).json({
+                success: false,
+                message: 'Dados incompletos. Título, descrição, tipo e avaliação são obrigatórios'
+            });
+            return;
+        }
+
+        const feedback = await db.query(
+            `INSERT INTO feedbacks 
+                (aluno_id, titulo, descricao, tipo, avaliacao) 
+             VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+            [alunoId, titulo, descricao, tipo, avaliacao]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Feedback enviado com sucesso. Obrigado por sua opinião!',
+            id: feedback.rows[0].id
+        });
+    } catch (error) {
+        console.error('Erro ao criar feedback do aluno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor ao criar feedback'
+        });
+    }
+};
+
+export const obterMeusFeedbacks = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const alunoId = req.aluno?.id;
+
+        if (!alunoId) {
+            res.status(401).json({ success: false, message: 'Aluno não autenticado' });
+            return;
+        }
+
+        const feedbacks = await db.query(
+            `SELECT id, titulo, descricao, tipo, avaliacao, status, resposta, created_at, updated_at
+             FROM feedbacks
+             WHERE aluno_id = $1
+             ORDER BY created_at DESC`,
+            [alunoId]
+        );
+
+        res.status(200).json({
+            success: true,
+            data: feedbacks.rows
+        });
+    } catch (error) {
+        console.error('Erro ao obter feedbacks do aluno:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro interno do servidor ao obter feedbacks'
+        });
+    }
+};
+
 export const listarTodosFeedbacks = async (req: Request, res: Response): Promise<void> => {
     try {
         // Parâmetros de filtro opcionais

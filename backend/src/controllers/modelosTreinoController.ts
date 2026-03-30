@@ -39,7 +39,17 @@ const getModeloTreinoById = async (req: Request, res: Response): Promise<void> =
         }
 
         const exerciciosQuery = `
-            SELECT it.id, e.nome, e.grupo_muscular, it.series, it.repeticoes, it.dia_semana, it.ordem
+            SELECT 
+                it.id, 
+                it.exercicio_id,
+                e.nome, 
+                e.grupo_muscular, 
+                it.series, 
+                it.repeticoes, 
+                it.dia_semana, 
+                it.ordem,
+                it.descanso_segundos,
+                it.observacoes
             FROM itens_treino it
             JOIN exercicios e ON it.exercicio_id = e.id
             WHERE it.modelo_treino_id = $1
@@ -56,15 +66,39 @@ const getModeloTreinoById = async (req: Request, res: Response): Promise<void> =
 
 const addExercicioAoModelo = async (req: Request, res: Response): Promise<void> => {
     const { id } = req.params;
-    const { exercicio_id, series, repeticoes, dia_semana, ordem, observacoes } = req.body;
+    const { exercicio_id, series, repeticoes, dia_semana, ordem, observacoes, descanso_segundos } = req.body;
     if (!exercicio_id || !series || !repeticoes) {
         res.status(400).json({ error: 'Exercício, séries e repetições são obrigatórios.' });
         return;
     }
     try {
+        // Verifica se o modelo de treino existe
+        const modeloCheck = await db.query('SELECT id FROM modelos_treino WHERE id = $1', [id]);
+        if (modeloCheck.rows.length === 0) {
+            res.status(404).json({ error: 'Modelo de treino não encontrado.' });
+            return;
+        }
+
+        // Verifica se o exercício existe
+        const exercicioCheck = await db.query('SELECT id FROM exercicios WHERE id = $1', [exercicio_id]);
+        if (exercicioCheck.rows.length === 0) {
+            res.status(404).json({ error: 'Exercício não encontrado.' });
+            return;
+        }
+
+        // Se ordem não for fornecida, calcula automaticamente a próxima ordem disponível
+        let ordemFinal = ordem;
+        if (!ordemFinal || ordemFinal === undefined || ordemFinal === null) {
+            const maxOrdemResult = await db.query(
+                'SELECT COALESCE(MAX(ordem), 0) as max_ordem FROM itens_treino WHERE modelo_treino_id = $1',
+                [id]
+            );
+            ordemFinal = maxOrdemResult.rows[0].max_ordem + 1;
+        }
+
         const result = await db.query(
-            'INSERT INTO itens_treino (modelo_treino_id, exercicio_id, series, repeticoes, dia_semana, ordem, observacoes) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
-            [id, exercicio_id, series, repeticoes, dia_semana, ordem, observacoes]
+            'INSERT INTO itens_treino (modelo_treino_id, exercicio_id, series, repeticoes, dia_semana, ordem, observacoes, descanso_segundos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+            [id, exercicio_id, series, repeticoes, dia_semana || null, ordemFinal, observacoes || null, descanso_segundos || null]
         );
         res.status(201).json(result.rows[0]);
     } catch (error) {
@@ -123,15 +157,15 @@ const duplicateModeloTreino = async (req: Request, res: Response): Promise<void>
         const novoModeloId = novoModelo.rows[0].id;
 
         const itensTreinoOriginais = await db.query(
-            'SELECT exercicio_id, series, repeticoes, dia_semana, ordem, observacoes FROM itens_treino WHERE modelo_treino_id = $1',
+            'SELECT exercicio_id, series, repeticoes, dia_semana, ordem, observacoes, descanso_segundos FROM itens_treino WHERE modelo_treino_id = $1',
             [id]
         );
 
         // Use parameterized queries to avoid SQL injection — never interpolate DB values into SQL strings
         for (const item of itensTreinoOriginais.rows) {
             await db.query(
-                'INSERT INTO itens_treino (modelo_treino_id, exercicio_id, series, repeticoes, dia_semana, ordem, observacoes) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-                [novoModeloId, item.exercicio_id, item.series, item.repeticoes, item.dia_semana, item.ordem, item.observacoes]
+                'INSERT INTO itens_treino (modelo_treino_id, exercicio_id, series, repeticoes, dia_semana, ordem, observacoes, descanso_segundos) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
+                [novoModeloId, item.exercicio_id, item.series, item.repeticoes, item.dia_semana, item.ordem, item.observacoes, item.descanso_segundos]
             );
         }
 
@@ -173,64 +207,9 @@ const getModelosTreinoByAlunoId = asyncHandler(async (req, res) => {
     });
 });
 
-const assignModeloTreinoToAluno = async (req: Request, res: Response): Promise<void> => {
-    const { alunoId, modeloTreinoId } = req.params;
-    
-    try {
-        // Verificar se o aluno existe
-        const alunoResult = await db.query('SELECT id FROM alunos WHERE id = $1', [alunoId]);
-        if (alunoResult.rows.length === 0) {
-            return void res.status(404).json({ error: 'Aluno não encontrado.' });
-        }
-        
-        // Verificar se o modelo de treino existe
-        const modeloResult = await db.query('SELECT id FROM modelos_treino WHERE id = $1', [modeloTreinoId]);
-        if (modeloResult.rows.length === 0) {
-            return void res.status(404).json({ error: 'Modelo de treino não encontrado.' });
-        }
-        
-        // Verificar se já existe essa atribuição
-        const existeResult = await db.query(
-            'SELECT * FROM alunos_modelos_treino WHERE aluno_id = $1 AND modelo_treino_id = $2',
-            [alunoId, modeloTreinoId]
-        );
-        
-        if (existeResult.rows.length > 0) {
-            return void res.status(409).json({ error: 'Este modelo de treino já está atribuído a este aluno.' });
-        }
-        
-        // Atribuir o modelo de treino ao aluno
-        await db.query(
-            'INSERT INTO alunos_modelos_treino (aluno_id, modelo_treino_id) VALUES ($1, $2)',
-            [alunoId, modeloTreinoId]
-        );
-        
-        res.status(201).json({ message: 'Modelo de treino atribuído com sucesso.' });
-    } catch (error) {
-        console.error('Erro ao atribuir modelo de treino:', error);
-        res.status(500).json({ error: 'Erro ao atribuir modelo de treino.' });
-    }
-};
-
-const removeModeloTreinoFromAluno = async (req: Request, res: Response): Promise<void> => {
-    const { alunoId, modeloTreinoId } = req.params;
-    
-    try {
-        const result = await db.query(
-            'DELETE FROM alunos_modelos_treino WHERE aluno_id = $1 AND modelo_treino_id = $2',
-            [alunoId, modeloTreinoId]
-        );
-        
-        if (result.rowCount === 0) {
-            return void res.status(404).json({ error: 'Atribuição não encontrada.' });
-        }
-        
-        res.status(200).json({ message: 'Modelo de treino removido do aluno com sucesso.' });
-    } catch (error) {
-        console.error('Erro ao remover atribuição de modelo de treino:', error);
-        res.status(500).json({ error: 'Erro ao remover atribuição de modelo de treino.' });
-    }
-};
+// NOTA: As funções assignModeloTreinoToAluno e removeModeloTreinoFromAluno
+// foram movidas para alunosModelosController.ts para melhor organização
+// e evitar duplicação de código.
 
 export {
     createModeloTreino,
@@ -240,7 +219,5 @@ export {
     removeExercicioDoModelo,
     deleteModeloTreino,
     duplicateModeloTreino,
-    getModelosTreinoByAlunoId,
-    assignModeloTreinoToAluno,
-    removeModeloTreinoFromAluno
+    getModelosTreinoByAlunoId
 };
