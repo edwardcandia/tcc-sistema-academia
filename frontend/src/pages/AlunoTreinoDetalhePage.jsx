@@ -43,6 +43,11 @@ function AlunoTreinoDetalhePage() {
     const [mostrarEstatisticas, setMostrarEstatisticas] = useState(false);
     const [checklistExercicios, setChecklistExercicios] = useState({});
     const [cargasExercicios, setCargasExercicios] = useState({});
+    const [imagemPreview, setImagemPreview] = useState(null);
+
+    const handleOpenImage = (url) => {
+        setImagemPreview(url);
+    };
 
     useEffect(() => {
         const fetchTreinoDetalhes = async () => {
@@ -439,58 +444,78 @@ function AlunoTreinoDetalhePage() {
                             <CardContent>
                                 <Grid container spacing={2}>
                                     <Grid item xs={12} md={8}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                            <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                                                {index + 1}
-                                            </Avatar>
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                {exercicio.nome}
-                                            </Typography>
-                                            {completados.includes(index) && <CheckCircle color="success" />}
-                                        </Box>
-                                        
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                                            <Chip label={exercicio.grupo_muscular} size="small" color="secondary" />
-                                            <Chip label={`${exercicio.series} séries`} size="small" variant="outlined" />
-                                            <Chip label={`${exercicio.repeticoes} reps`} size="small" color="primary" variant="outlined" />
-                                            {exercicio.descanso_segundos && (
-                                                <Chip icon={<Timer />} label={`${exercicio.descanso_segundos}s desc.`} size="small" color="warning" variant="outlined" />
+                                        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                            {exercicio.imagem_url && (
+                                                <Box 
+                                                    component="img"
+                                                    src={exercicio.imagem_url}
+                                                    alt={exercicio.nome}
+                                                    sx={{ 
+                                                        width: { xs: '100%', sm: 120 },
+                                                        height: { xs: 200, sm: 120 },
+                                                        borderRadius: 2, 
+                                                        objectFit: 'cover',
+                                                        cursor: 'pointer',
+                                                        border: '1px solid #eee'
+                                                    }}
+                                                    onClick={() => handleOpenImage(exercicio.imagem_url)}
+                                                />
                                             )}
-                                        </Box>
+                                            <Box sx={{ flex: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                    <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+                                                        {index + 1}
+                                                    </Avatar>
+                                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                                        {exercicio.nome}
+                                                    </Typography>
+                                                    {completados.includes(index) && <CheckCircle color="success" />}
+                                                </Box>
+                                                
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                                    <Chip label={exercicio.grupo_muscular} size="small" color="secondary" />
+                                                    <Chip label={`${exercicio.series} séries`} size="small" variant="outlined" />
+                                                    <Chip label={`${exercicio.repeticoes} reps`} size="small" color="primary" variant="outlined" />
+                                                    {exercicio.descanso_segundos && (
+                                                        <Chip icon={<Timer />} label={`${exercicio.descanso_segundos}s desc.`} size="small" color="warning" variant="outlined" />
+                                                    )}
+                                                </Box>
 
-                                        {/* Instruções e Mídia */}
-                                        <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
-                                            {exercicio.link_video && (
-                                                <Button 
-                                                    size="small" 
-                                                    startIcon={<YouTube />} 
-                                                    color="error" 
-                                                    component={Link} 
-                                                    href={exercicio.link_video} 
-                                                    target="_blank"
-                                                >
-                                                    Ver Vídeo
-                                                </Button>
-                                            )}
-                                            {exercicio.instrucoes && (
-                                                <Accordion sx={{ boxShadow: 'none', '&:before': { display: 'none' }, width: '100%' }}>
-                                                    <AccordionSummary expandIcon={<ExpandMore />} sx={{ p: 0, minHeight: 0 }}>
-                                                        <Button size="small" startIcon={<MenuBook />} color="info">
-                                                            Instruções
+                                                {/* Instruções e Mídia */}
+                                                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                                                    {exercicio.link_video && (
+                                                        <Button 
+                                                            size="small" 
+                                                            startIcon={<YouTube />} 
+                                                            color="error" 
+                                                            component={Link} 
+                                                            href={exercicio.link_video} 
+                                                            target="_blank"
+                                                        >
+                                                            Ver Vídeo
                                                         </Button>
-                                                    </AccordionSummary>
-                                                    <AccordionDetails sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
-                                                        <Typography variant="body2">{exercicio.instrucoes}</Typography>
-                                                    </AccordionDetails>
-                                                </Accordion>
-                                            )}
-                                        </Stack>
+                                                    )}
+                                                    {exercicio.instrucoes && (
+                                                        <Accordion sx={{ boxShadow: 'none', '&:before': { display: 'none' }, width: '100%' }}>
+                                                            <AccordionSummary expandIcon={<ExpandMore />} sx={{ p: 0, minHeight: 0 }}>
+                                                                <Button size="small" startIcon={<MenuBook />} color="info">
+                                                                    Instruções
+                                                                </Button>
+                                                            </AccordionSummary>
+                                                            <AccordionDetails sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                                                                <Typography variant="body2">{exercicio.instrucoes}</Typography>
+                                                            </AccordionDetails>
+                                                        </Accordion>
+                                                    )}
+                                                </Stack>
 
-                                        {exercicio.observacoes && (
-                                            <Alert severity="info" sx={{ mb: 2, py: 0 }}>
-                                                <Typography variant="caption"><strong>Dica do Instrutor:</strong> {exercicio.observacoes}</Typography>
-                                            </Alert>
-                                        )}
+                                                {exercicio.observacoes && (
+                                                    <Alert severity="info" sx={{ mb: 2, py: 0 }}>
+                                                        <Typography variant="caption"><strong>Dica do Instrutor:</strong> {exercicio.observacoes}</Typography>
+                                                    </Alert>
+                                                )}
+                                            </Box>
+                                        </Box>
                                     </Grid>
 
                                     {/* Checklist e Cargas */}
@@ -587,6 +612,33 @@ function AlunoTreinoDetalhePage() {
                     <DialogActions>
                         <Button onClick={() => setDialogoRegistroAberto(false)}>Voltar</Button>
                         <Button onClick={registrarTreino} variant="contained" color="primary">Finalizar e Salvar</Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Diálogo de Preview de Imagem */}
+                <Dialog 
+                    open={Boolean(imagemPreview)} 
+                    onClose={() => setImagemPreview(null)} 
+                    maxWidth="md"
+                >
+                    <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        Visualização do Exercício
+                        <IconButton onClick={() => setImagemPreview(null)}>
+                            <ExpandMore sx={{ transform: 'rotate(180deg)' }} />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent>
+                        {imagemPreview && (
+                            <Box 
+                                component="img"
+                                src={imagemPreview}
+                                alt="Preview do exercício"
+                                sx={{ width: '100%', height: 'auto', borderRadius: 1 }}
+                            />
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setImagemPreview(null)}>Fechar</Button>
                     </DialogActions>
                 </Dialog>
             </Box>
