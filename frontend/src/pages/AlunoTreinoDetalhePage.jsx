@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import { 
@@ -9,13 +9,14 @@ import {
     LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions,
     TextField, Avatar, Stack, Alert, Checkbox, FormControlLabel,
     CardActions, Collapse, Rating, TableContainer, Table, TableHead,
-    TableRow, TableCell, TableBody, Tooltip
+    TableRow, TableCell, TableBody, Tooltip, Link
 } from '@mui/material';
 import { 
     ArrowBack, ExpandMore, FitnessCenter, Timer, CheckCircle, 
     DirectionsRun, PlayArrow, Done, EmojiEvents, TrendingUp,
     CalendarMonth, Flag, Schedule, Restaurant, LocalFireDepartment,
-    Timeline, CheckBox, CheckBoxOutlineBlank, Info, BarChart
+    Timeline, CheckBox, CheckBoxOutlineBlank, Info, BarChart,
+    YouTube, Image, MenuBook
 } from '@mui/icons-material';
 
 import { API_BASE } from '../services/api';
@@ -24,9 +25,11 @@ function AlunoTreinoDetalhePage() {
     const { id } = useParams();
     const { authHeader, aluno } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [treino, setTreino] = useState(null);
     const [exercicios, setExercicios] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [errorState, setErrorState] = useState(null);
     const [execucaoAtiva, setExecucaoAtiva] = useState(false);
     const [exercicioAtual, setExercicioAtual] = useState(0);
     const [tempo, setTempo] = useState(0);
@@ -39,38 +42,55 @@ function AlunoTreinoDetalhePage() {
     const [mostrarHistorico, setMostrarHistorico] = useState(false);
     const [mostrarEstatisticas, setMostrarEstatisticas] = useState(false);
     const [checklistExercicios, setChecklistExercicios] = useState({});
+    const [cargasExercicios, setCargasExercicios] = useState({});
+    const [imagemPreview, setImagemPreview] = useState(null);
+
+    const handleOpenImage = (url) => {
+        setImagemPreview(url);
+    };
 
     useEffect(() => {
         const fetchTreinoDetalhes = async () => {
+            if (!id || id === 'undefined') {
+                setErrorState("ID do treino não fornecido.");
+                setLoading(false);
+                return;
+            }
             try {
                 setLoading(true);
-                // Busca o modelo de treino com os exercícios inclusos
-                const responseTreino = await axios.get(`${API_BASE}/modelos-treino/${id}`, authHeader());
+                setErrorState(null);
+                
+                // Busca o modelo de treino com os exercícios inclusos através do portal do aluno
+                const responseTreino = await axios.get(`${API_BASE}/portal/meus-treinos/${id}`, authHeader());
                 setTreino(responseTreino.data);
-                // Os exercícios já vêm na resposta do modelo
+                
                 const exerciciosData = Array.isArray(responseTreino.data.exercicios) ? responseTreino.data.exercicios : [];
                 setExercicios(exerciciosData);
                 
-                // Inicializa checklist vazio para cada exercício
+                // Inicializa checklist e cargas
                 const checklistInicial = {};
+                const cargasIniciais = {};
                 exerciciosData.forEach((ex) => {
-                    checklistInicial[ex.id] = Array(parseInt(ex.series) || 0).fill(false);
+                    const numSeries = parseInt(ex.series) || 0;
+                    checklistInicial[ex.id] = Array(numSeries).fill(false);
+                    cargasIniciais[ex.id] = Array(numSeries).fill('');
                 });
                 setChecklistExercicios(checklistInicial);
+                setCargasExercicios(cargasIniciais);
 
                 // Busca informações da associação do aluno com este modelo
                 if (aluno?.id) {
                     try {
                         const responseAssociacao = await axios.get(
-                            `${API_BASE}/alunos/${aluno.id}/modelos`, 
+                            `${API_BASE}/alunos-modelos/aluno/${aluno.id}`, 
                             authHeader()
                         );
                         const associacao = responseAssociacao.data.find(
                             assoc => assoc.modelo_treino_id === parseInt(id)
                         );
                         setAssociacaoInfo(associacao);
-                    } catch (error) {
-                        console.error("Erro ao buscar associação:", error);
+                    } catch (e) {
+                        console.error("Erro ao buscar associação:", e);
                     }
                 }
 
@@ -86,28 +106,12 @@ function AlunoTreinoDetalhePage() {
                         );
                         setHistoricoTreinos(historicoDeste);
                     }
-                } catch (error) {
-                    console.error("Erro ao buscar histórico:", error);
+                } catch (e) {
+                    console.error("Erro ao buscar histórico:", e);
                 }
             } catch (error) {
                 console.error("Erro ao buscar detalhes do treino:", error);
-                // Dados de exemplo caso a API falhe
-                setTreino({
-                    id: id,
-                    nome: 'Treino A - Exemplo',
-                    descricao: 'Treino focado em peito e tríceps',
-                    nivel_dificuldade: 'Intermediário',
-                    objetivo: 'Hipertrofia',
-                    duracao_semanas: 8,
-                    duracao_estimada: '45-60 min'
-                });
-                
-                setExercicios([
-                    { id: 1, exercicio_id: 1, nome: 'Supino Reto', grupo_muscular: 'Peito', series: 4, repeticoes: '12', descanso_segundos: 60, observacoes: 'Manter cotovelos alinhados' },
-                    { id: 2, exercicio_id: 2, nome: 'Crucifixo com Halteres', grupo_muscular: 'Peito', series: 3, repeticoes: '15', descanso_segundos: 45, observacoes: 'Movimento controlado' },
-                    { id: 3, exercicio_id: 3, nome: 'Tríceps Pulley', grupo_muscular: 'Tríceps', series: 4, repeticoes: '12', descanso_segundos: 40, observacoes: 'Cotovelos junto ao corpo' },
-                    { id: 4, exercicio_id: 4, nome: 'Tríceps Testa', grupo_muscular: 'Tríceps', series: 3, repeticoes: '12', descanso_segundos: 45, observacoes: 'Não movimentar os cotovelos' }
-                ]);
+                setErrorState("Não foi possível carregar os detalhes do treino. Verifique sua conexão ou se este treino ainda está ativo.");
             } finally {
                 setLoading(false);
             }
@@ -115,6 +119,15 @@ function AlunoTreinoDetalhePage() {
 
         fetchTreinoDetalhes();
     }, [id, authHeader, aluno]);
+
+    // Iniciar treino automaticamente se solicitado via navegação
+    useEffect(() => {
+        if (!loading && exercicios.length > 0 && location.state?.iniciarAuto) {
+            iniciarTreino();
+            // Limpa o estado para não reiniciar se recarregar a página
+            window.history.replaceState({}, document.title);
+        }
+    }, [loading, exercicios, location.state]);
 
     // Cronômetro para acompanhar o tempo de treino
     useEffect(() => {
@@ -165,8 +178,19 @@ function AlunoTreinoDetalhePage() {
         });
     };
 
+    // Atualizar carga da série
+    const handleCargaChange = (exercicioId, serieIndex, valor) => {
+        setCargasExercicios(prev => {
+            const novasCargas = { ...prev };
+            novasCargas[exercicioId] = [...novasCargas[exercicioId]];
+            novasCargas[exercicioId][serieIndex] = valor;
+            return novasCargas;
+        });
+    };
+
     // Calcular estatísticas do treino
     const calcularEstatisticas = () => {
+        if (!exercicios.length) return { totalSeries: 0, totalExercicios: 0, gruposMusculares: [], tempoDescansoTotal: 0, mediaSeriesPorExercicio: 0 };
         const totalSeries = exercicios.reduce((acc, ex) => acc + parseInt(ex.series || 0), 0);
         const totalExercicios = exercicios.length;
         const gruposMusculares = [...new Set(exercicios.map(ex => ex.grupo_muscular).filter(Boolean))];
@@ -194,11 +218,20 @@ function AlunoTreinoDetalhePage() {
     // Registrar treino completo
     const registrarTreino = async () => {
         try {
+            // Construir observações detalhadas com as cargas
+            let obsCargas = "";
+            exercicios.forEach(ex => {
+                const cargas = cargasExercicios[ex.id]?.filter(c => c !== "").join(", ");
+                if (cargas) {
+                    obsCargas += `\n- ${ex.nome || ex.nome_exercicio}: ${cargas} kg`;
+                }
+            });
+
             const data = {
                 treino_id: id,
                 data: new Date().toISOString().split('T')[0],
-                duracao: Math.ceil(tempo / 60), // Converte segundos para minutos
-                observacoes: notasFinais,
+                duracao: Math.ceil(tempo / 60),
+                observacoes: notasFinais + (obsCargas ? `\n\nCargas registradas:${obsCargas}` : ""),
                 avaliacao: avaliacao
             };
             
@@ -229,6 +262,22 @@ function AlunoTreinoDetalhePage() {
         );
     }
 
+    if (errorState) {
+        return (
+            <Container maxWidth="md">
+                <Box sx={{ my: 4 }}>
+                    <Alert severity="error" action={
+                        <Button color="inherit" size="small" onClick={() => navigate('/aluno/dashboard')}>
+                            Voltar ao Início
+                        </Button>
+                    }>
+                        {errorState}
+                    </Alert>
+                </Box>
+            </Container>
+        );
+    }
+
     return (
         <Container maxWidth="lg">
             <Box sx={{ my: 4 }}>
@@ -240,10 +289,10 @@ function AlunoTreinoDetalhePage() {
                         </IconButton>
                         <Box>
                             <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                                {treino.nome}
+                                {treino?.nome}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
-                                {treino.descricao || 'Treino personalizado'}
+                                {treino?.descricao || 'Treino personalizado'}
                             </Typography>
                         </Box>
                     </Box>
@@ -306,7 +355,6 @@ function AlunoTreinoDetalhePage() {
                             <strong>Status:</strong> {associacaoInfo.status} • 
                             <strong> Início:</strong> {associacaoInfo.data_inicio || 'Não definido'} • 
                             <strong> Término previsto:</strong> {associacaoInfo.data_fim || 'Não definido'}
-                            {associacaoInfo.observacoes && <> • <strong>Obs:</strong> {associacaoInfo.observacoes}</>}
                         </Typography>
                     </Alert>
                 )}
@@ -314,7 +362,7 @@ function AlunoTreinoDetalhePage() {
                 {/* Cards de Informações Rápidas */}
                 <Grid container spacing={2} sx={{ mb: 4 }}>
                     <Grid item xs={12} sm={6} md={3}>
-                        <Card sx={{ height: '100%', bgcolor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                        <Card sx={{ height: '100%' }}>
                             <CardContent>
                                 <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                                     <FitnessCenter sx={{ mr: 1, fontSize: 30 }} color="primary" />
@@ -322,9 +370,6 @@ function AlunoTreinoDetalhePage() {
                                 </Box>
                                 <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
                                     {estatisticas.totalExercicios}
-                                </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    no total
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -340,9 +385,6 @@ function AlunoTreinoDetalhePage() {
                                 <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
                                     {estatisticas.totalSeries}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {estatisticas.mediaSeriesPorExercicio} por exercício
-                                </Typography>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -357,9 +399,7 @@ function AlunoTreinoDetalhePage() {
                                 <Typography variant="h3" sx={{ fontWeight: 'bold' }}>
                                     {estatisticas.tempoDescansoTotal}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    minutos totais
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary">minutos totais</Typography>
                             </CardContent>
                         </Card>
                     </Grid>
@@ -371,132 +411,19 @@ function AlunoTreinoDetalhePage() {
                                     <Flag sx={{ mr: 1, fontSize: 30 }} color="success" />
                                     <Typography variant="h6">Nível</Typography>
                                 </Box>
-                                <Typography variant="h3" sx={{ fontWeight: 'bold', fontSize: '1.8rem' }}>
-                                    {treino.nivel_dificuldade || 'Médio'}
+                                <Typography variant="h5" sx={{ fontWeight: 'bold', mt: 1 }}>
+                                    {treino?.nivel_dificuldade || 'Médio'}
                                 </Typography>
-                                <Typography variant="body2" color="text.secondary">
-                                    {treino.objetivo || 'Objetivo geral'}
-                                </Typography>
+                                <Typography variant="body2" color="text.secondary">{treino?.objetivo}</Typography>
                             </CardContent>
                         </Card>
                     </Grid>
                 </Grid>
 
-                {/* Botões para Expandir Estatísticas e Histórico */}
-                <Grid container spacing={2} sx={{ mb: 3 }}>
-                    <Grid item xs={12} sm={6}>
-                        <Button
-                            fullWidth
-                            variant={mostrarEstatisticas ? "contained" : "outlined"}
-                            startIcon={<TrendingUp />}
-                            onClick={() => setMostrarEstatisticas(!mostrarEstatisticas)}
-                        >
-                            {mostrarEstatisticas ? 'Ocultar' : 'Ver'} Estatísticas Detalhadas
-                        </Button>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                        <Button
-                            fullWidth
-                            variant={mostrarHistorico ? "contained" : "outlined"}
-                            startIcon={<Timeline />}
-                            onClick={() => setMostrarHistorico(!mostrarHistorico)}
-                        >
-                            {mostrarHistorico ? 'Ocultar' : 'Ver'} Histórico ({historicoTreinos.length})
-                        </Button>
-                    </Grid>
-                </Grid>
-
-                {/* Estatísticas Detalhadas */}
-                <Collapse in={mostrarEstatisticas}>
-                    <Paper sx={{ p: 3, mb: 3 }}>
-                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <BarChart /> Estatísticas Detalhadas
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <Grid container spacing={3}>
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle2" color="text.secondary">Grupos Musculares</Typography>
-                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mt: 1 }}>
-                                    {estatisticas.gruposMusculares.length > 0 ? (
-                                        estatisticas.gruposMusculares.map((grupo, idx) => (
-                                            <Chip key={idx} label={grupo} color="secondary" />
-                                        ))
-                                    ) : (
-                                        <Chip label="Não especificado" variant="outlined" />
-                                    )}
-                                </Box>
-                            </Grid>
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle2" color="text.secondary">Duração Estimada</Typography>
-                                <Typography variant="h6" sx={{ mt: 1 }}>
-                                    {treino.duracao_estimada || '45-60 min'}
-                                </Typography>
-                            </Grid>
-                            {treino.duracao_semanas && (
-                                <Grid item xs={12} md={6}>
-                                    <Typography variant="subtitle2" color="text.secondary">Duração do Programa</Typography>
-                                    <Typography variant="h6" sx={{ mt: 1 }}>
-                                        {treino.duracao_semanas} semanas
-                                    </Typography>
-                                </Grid>
-                            )}
-                            <Grid item xs={12} md={6}>
-                                <Typography variant="subtitle2" color="text.secondary">Treinos Realizados</Typography>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
-                                    <EmojiEvents sx={{ fontSize: 30, color: 'gold' }} />
-                                    <Typography variant="h6">
-                                        {historicoTreinos.length} vezes
-                                    </Typography>
-                                </Box>
-                            </Grid>
-                        </Grid>
-                    </Paper>
-                </Collapse>
-
-                {/* Histórico de Treinos */}
-                <Collapse in={mostrarHistorico}>
-                    <Paper sx={{ p: 3, mb: 3 }}>
-                        <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <Timeline /> Histórico de Treinos Realizados
-                        </Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        {historicoTreinos.length > 0 ? (
-                            <TableContainer>
-                                <Table size="small">
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell><strong>Data</strong></TableCell>
-                                            <TableCell><strong>Duração</strong></TableCell>
-                                            <TableCell><strong>Avaliação</strong></TableCell>
-                                            <TableCell><strong>Observações</strong></TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {historicoTreinos.slice(0, 5).map((hist, idx) => (
-                                            <TableRow key={idx} hover>
-                                                <TableCell>{hist.data_realizacao || hist.data}</TableCell>
-                                                <TableCell>{hist.duracao} min</TableCell>
-                                                <TableCell>
-                                                    <Rating value={hist.avaliacao} readOnly size="small" />
-                                                </TableCell>
-                                                <TableCell>{hist.observacoes || '-'}</TableCell>
-                                            </TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        ) : (
-                            <Alert severity="info">
-                                Este treino ainda não foi realizado. Seja o primeiro!
-                            </Alert>
-                        )}
-                    </Paper>
-                </Collapse>
-
-                {/* Lista de Exercícios com Checklist */}
+                {/* Lista de Exercícios */}
                 <Typography variant="h5" sx={{ mb: 2, fontWeight: 'bold' }}>
                     <FitnessCenter sx={{ mr: 1, verticalAlign: 'middle' }} />
-                    Exercícios do Treino
+                    Sequência de Exercícios
                 </Typography>
 
                 {exercicios.map((exercicio, index) => {
@@ -508,120 +435,147 @@ function AlunoTreinoDetalhePage() {
                         <Card 
                             key={exercicio.id} 
                             sx={{
-                                mb: 2,
-                                bgcolor: completados.includes(index) ? '#e8f5e9' : 'inherit',
+                                mb: 3,
+                                bgcolor: completados.includes(index) ? '#f1f8e9' : 'inherit',
                                 border: execucaoAtiva && exercicioAtual === index ? '2px solid' : 'none',
                                 borderColor: 'primary.main',
-                                position: 'relative'
                             }}
                         >
                             <CardContent>
-                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                    <Box sx={{ flex: 1 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                            <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
-                                                {index + 1}
-                                            </Avatar>
-                                            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
-                                                {exercicio.nome || exercicio.nome_exercicio}
-                                            </Typography>
-                                            {completados.includes(index) && (
-                                                <CheckCircle color="success" />
-                                            )}
-                                        </Box>
-                                        
-                                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
-                                            {exercicio.grupo_muscular && (
-                                                <Chip 
-                                                    icon={<FitnessCenter />}
-                                                    label={exercicio.grupo_muscular} 
-                                                    size="small" 
-                                                    color="secondary"
+                                <Grid container spacing={2}>
+                                    <Grid item xs={12} md={8}>
+                                        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+                                            {exercicio.imagem_url && (
+                                                <Box 
+                                                    component="img"
+                                                    src={exercicio.imagem_url}
+                                                    alt={exercicio.nome}
+                                                    sx={{ 
+                                                        width: { xs: '100%', sm: 120 },
+                                                        height: { xs: 200, sm: 120 },
+                                                        borderRadius: 2, 
+                                                        objectFit: 'cover',
+                                                        cursor: 'pointer',
+                                                        border: '1px solid #eee'
+                                                    }}
+                                                    onClick={() => handleOpenImage(exercicio.imagem_url)}
                                                 />
                                             )}
-                                            <Chip 
-                                                label={`${exercicio.series} séries`} 
-                                                size="small" 
-                                                variant="outlined"
-                                            />
-                                            <Chip 
-                                                label={`${exercicio.repeticoes} repetições`} 
-                                                size="small" 
-                                                color="primary"
-                                                variant="outlined"
-                                            />
-                                            {exercicio.descanso_segundos && (
-                                                <Chip 
-                                                    icon={<Timer />}
-                                                    label={`${exercicio.descanso_segundos}s descanso`} 
-                                                    size="small" 
-                                                    color="warning"
-                                                    variant="outlined"
-                                                />
-                                            )}
-                                        </Box>
+                                            <Box sx={{ flex: 1 }}>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                                                    <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+                                                        {index + 1}
+                                                    </Avatar>
+                                                    <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                                                        {exercicio.nome}
+                                                    </Typography>
+                                                    {completados.includes(index) && <CheckCircle color="success" />}
+                                                </Box>
+                                                
+                                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+                                                    <Chip label={exercicio.grupo_muscular} size="small" color="secondary" />
+                                                    <Chip label={`${exercicio.series} séries`} size="small" variant="outlined" />
+                                                    <Chip label={`${exercicio.repeticoes} reps`} size="small" color="primary" variant="outlined" />
+                                                    {exercicio.descanso_segundos && (
+                                                        <Chip icon={<Timer />} label={`${exercicio.descanso_segundos}s desc.`} size="small" color="warning" variant="outlined" />
+                                                    )}
+                                                </Box>
 
-                                        {exercicio.observacoes && (
-                                            <Alert severity="info" sx={{ mb: 2 }}>
-                                                <Typography variant="body2">
-                                                    <strong>Dica:</strong> {exercicio.observacoes}
-                                                </Typography>
-                                            </Alert>
-                                        )}
+                                                {/* Instruções e Mídia */}
+                                                <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+                                                    {exercicio.link_video && (
+                                                        <Button 
+                                                            size="small" 
+                                                            startIcon={<YouTube />} 
+                                                            color="error" 
+                                                            component={Link} 
+                                                            href={exercicio.link_video} 
+                                                            target="_blank"
+                                                        >
+                                                            Ver Vídeo
+                                                        </Button>
+                                                    )}
+                                                    {exercicio.instrucoes && (
+                                                        <Accordion sx={{ boxShadow: 'none', '&:before': { display: 'none' }, width: '100%' }}>
+                                                            <AccordionSummary expandIcon={<ExpandMore />} sx={{ p: 0, minHeight: 0 }}>
+                                                                <Button size="small" startIcon={<MenuBook />} color="info">
+                                                                    Instruções
+                                                                </Button>
+                                                            </AccordionSummary>
+                                                            <AccordionDetails sx={{ p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
+                                                                <Typography variant="body2">{exercicio.instrucoes}</Typography>
+                                                            </AccordionDetails>
+                                                        </Accordion>
+                                                    )}
+                                                </Stack>
 
-                                        {/* Checklist de Séries */}
-                                        <Box sx={{ mt: 2 }}>
-                                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                                Marque as séries conforme realiza:
-                                            </Typography>
-                                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                                                {Array.from({ length: totalSeries }).map((_, serieIdx) => (
-                                                    <Tooltip key={serieIdx} title={`Série ${serieIdx + 1}`}>
-                                                        <FormControlLabel
-                                                            control={
-                                                                <Checkbox
-                                                                    checked={checklistExercicios[exercicio.id]?.[serieIdx] || false}
-                                                                    onChange={() => toggleSerieChecklist(exercicio.id, serieIdx)}
-                                                                    icon={<CheckBoxOutlineBlank />}
-                                                                    checkedIcon={<CheckBox />}
-                                                                    color="success"
-                                                                />
-                                                            }
-                                                            label={`Série ${serieIdx + 1}`}
-                                                        />
-                                                    </Tooltip>
-                                                ))}
-                                            </Box>
-                                            
-                                            {/* Barra de Progresso do Exercício */}
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <LinearProgress 
-                                                    variant="determinate" 
-                                                    value={progressoExercicio} 
-                                                    sx={{ flex: 1, height: 6, borderRadius: 3 }}
-                                                />
-                                                <Typography variant="caption" color="text.secondary">
-                                                    {seriesCompletadas}/{totalSeries}
-                                                </Typography>
+                                                {exercicio.observacoes && (
+                                                    <Alert severity="info" sx={{ mb: 2, py: 0 }}>
+                                                        <Typography variant="caption"><strong>Dica do Instrutor:</strong> {exercicio.observacoes}</Typography>
+                                                    </Alert>
+                                                )}
                                             </Box>
                                         </Box>
-                                    </Box>
-                                </Box>
+                                    </Grid>
+
+                                    {/* Checklist e Cargas */}
+                                    <Grid item xs={12} md={4}>
+                                        <Paper variant="outlined" sx={{ p: 1.5 }}>
+                                            <Typography variant="subtitle2" gutterBottom>Registro de Séries:</Typography>
+                                            <TableContainer>
+                                                <Table size="small">
+                                                    <TableHead>
+                                                        <TableRow>
+                                                            <TableCell sx={{ p: 0.5 }}>OK</TableCell>
+                                                            <TableCell sx={{ p: 0.5 }}>Série</TableCell>
+                                                            <TableCell sx={{ p: 0.5 }}>Carga (kg)</TableCell>
+                                                        </TableRow>
+                                                    </TableHead>
+                                                    <TableBody>
+                                                        {Array.from({ length: totalSeries }).map((_, sIdx) => (
+                                                            <TableRow key={sIdx}>
+                                                                <TableCell sx={{ p: 0.5 }}>
+                                                                    <Checkbox 
+                                                                        size="small"
+                                                                        checked={checklistExercicios[exercicio.id]?.[sIdx] || false}
+                                                                        onChange={() => toggleSerieChecklist(exercicio.id, sIdx)}
+                                                                        color="success"
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell sx={{ p: 0.5 }}>{sIdx + 1}ª</TableCell>
+                                                                <TableCell sx={{ p: 0.5 }}>
+                                                                    <TextField 
+                                                                        size="small" 
+                                                                        variant="standard" 
+                                                                        placeholder="-"
+                                                                        value={cargasExercicios[exercicio.id]?.[sIdx] || ''}
+                                                                        onChange={(e) => handleCargaChange(exercicio.id, sIdx, e.target.value)}
+                                                                        sx={{ width: '40px' }}
+                                                                    />
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </TableContainer>
+                                            <Box sx={{ mt: 1 }}>
+                                                <LinearProgress variant="determinate" value={progressoExercicio} sx={{ height: 4, borderRadius: 2 }} />
+                                            </Box>
+                                        </Paper>
+                                    </Grid>
+                                </Grid>
                             </CardContent>
 
                             {execucaoAtiva && exercicioAtual === index && (
-                                <CardActions sx={{ justifyContent: 'center', bgcolor: 'primary.light', py: 2 }}>
+                                <CardActions sx={{ justifyContent: 'center', bgcolor: 'primary.main', py: 1 }}>
                                     <Button 
                                         variant="contained" 
                                         color="success"
-                                        size="large"
                                         startIcon={<Done />}
                                         onClick={() => marcarCompletado(index)}
                                         disabled={seriesCompletadas < totalSeries}
                                     >
-                                        {seriesCompletadas < totalSeries 
-                                            ? `Complete ${totalSeries - seriesCompletadas} série(s)` 
-                                            : 'Exercício Concluído!'}
+                                        Próximo Exercício
                                     </Button>
                                 </CardActions>
                             )}
@@ -629,66 +583,62 @@ function AlunoTreinoDetalhePage() {
                     );
                 })}
 
-                {/* Diálogo para registrar o treino */}
+                {/* Diálogo Final */}
                 <Dialog open={dialogoRegistroAberto} onClose={() => setDialogoRegistroAberto(false)} maxWidth="sm" fullWidth>
-                    <DialogTitle sx={{ bgcolor: 'primary.main', color: 'primary.contrastText' }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <EmojiEvents />
-                            Registrar Treino Concluído
-                        </Box>
+                    <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <EmojiEvents color="warning" /> Treino Concluído!
                     </DialogTitle>
-                    <DialogContent sx={{ mt: 2 }}>
-                        <Alert severity="success" sx={{ mb: 3 }}>
-                            <Typography variant="body1" sx={{ fontWeight: 'bold' }}>
-                                🎉 Parabéns! Você completou o treino {treino.nome}
-                            </Typography>
-                            <Typography variant="body2">
-                                Tempo total: {formatarTempo(tempo)} • {completados.length} exercícios completados
-                            </Typography>
-                        </Alert>
-
+                    <DialogContent>
+                        <Box sx={{ textAlign: 'center', my: 2 }}>
+                            <Typography variant="h5" color="primary" gutterBottom>Bom trabalho!</Typography>
+                            <Typography variant="body1">Tempo Total: <strong>{formatarTempo(tempo)}</strong></Typography>
+                        </Box>
+                        
                         <TextField
-                            label="Como foi seu treino hoje?"
-                            placeholder="Adicione suas observações sobre o treino..."
+                            label="Notas sobre o treino"
                             multiline
-                            rows={4}
+                            rows={3}
                             fullWidth
-                            variant="outlined"
-                            sx={{ mb: 3 }}
+                            sx={{ mt: 2 }}
                             value={notasFinais}
                             onChange={(e) => setNotasFinais(e.target.value)}
                         />
-
-                        <Typography gutterBottom sx={{ fontWeight: 'bold', mb: 1 }}>
-                            Avaliação do treino:
-                        </Typography>
-                        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-                            <Rating
-                                name="avaliacao-treino"
-                                value={avaliacao}
-                                onChange={(event, newValue) => {
-                                    setAvaliacao(newValue);
-                                }}
-                                size="large"
-                                icon={<EmojiEvents fontSize="inherit" />}
-                                emptyIcon={<EmojiEvents fontSize="inherit" />}
-                            />
+                        
+                        <Box sx={{ mt: 3, textAlign: 'center' }}>
+                            <Typography component="legend">Como você avalia este treino?</Typography>
+                            <Rating value={avaliacao} onChange={(e, val) => setAvaliacao(val)} size="large" />
                         </Box>
-                        <Typography variant="caption" color="text.secondary" align="center" display="block">
-                            {avaliacao === 1 && "Muito difícil, preciso conversar com meu instrutor"}
-                            {avaliacao === 2 && "Difícil, mas consegui completar"}
-                            {avaliacao === 3 && "Moderado, bom treino"}
-                            {avaliacao === 4 && "Ótimo treino, me senti bem!"}
-                            {avaliacao === 5 && "Excelente! Me sinto incrível!"}
-                        </Typography>
                     </DialogContent>
-                    <DialogActions sx={{ p: 2 }}>
-                        <Button onClick={() => setDialogoRegistroAberto(false)}>
-                            Cancelar
-                        </Button>
-                        <Button onClick={registrarTreino} variant="contained" color="primary" size="large">
-                            Salvar Registro
-                        </Button>
+                    <DialogActions>
+                        <Button onClick={() => setDialogoRegistroAberto(false)}>Voltar</Button>
+                        <Button onClick={registrarTreino} variant="contained" color="primary">Finalizar e Salvar</Button>
+                    </DialogActions>
+                </Dialog>
+
+                {/* Diálogo de Preview de Imagem */}
+                <Dialog 
+                    open={Boolean(imagemPreview)} 
+                    onClose={() => setImagemPreview(null)} 
+                    maxWidth="md"
+                >
+                    <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        Visualização do Exercício
+                        <IconButton onClick={() => setImagemPreview(null)}>
+                            <ExpandMore sx={{ transform: 'rotate(180deg)' }} />
+                        </IconButton>
+                    </DialogTitle>
+                    <DialogContent>
+                        {imagemPreview && (
+                            <Box 
+                                component="img"
+                                src={imagemPreview}
+                                alt="Preview do exercício"
+                                sx={{ width: '100%', height: 'auto', borderRadius: 1 }}
+                            />
+                        )}
+                    </DialogContent>
+                    <DialogActions>
+                        <Button onClick={() => setImagemPreview(null)}>Fechar</Button>
                     </DialogActions>
                 </Dialog>
             </Box>

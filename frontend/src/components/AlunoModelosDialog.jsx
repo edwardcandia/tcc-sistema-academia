@@ -43,7 +43,7 @@ function AlunoModelosDialog({ open, onClose, aluno }) {
 
   const fetchModelosAssociados = async () => {
     try {
-      const response = await axios.get(`${API_BASE}/alunos/${aluno.id}/modelos`, authHeader());
+      const response = await axios.get(`${API_BASE}/alunos-modelos/aluno/${aluno.id}`, authHeader());
       setModelosAssociados(response.data);
     } catch (error) {
       toast.error('Erro ao carregar modelos associados.');

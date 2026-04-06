@@ -22,7 +22,7 @@ const validate = (schema: any) => {
     if (schema.params) data.params = req.params;
 
     // Validate with schema
-    const { error, value } = Joi.object(schema).validate(data, validationOptions);
+    const { error, value } = schema.validate(data, validationOptions);
 
     // If error, format the error response
     if (error) {
@@ -116,12 +116,11 @@ const schemas = {
           'number.min': 'Avaliação deve ser no mínimo {#limit}',
           'number.max': 'Avaliação deve ser no máximo {#limit}'
         }),
-      aluno_id: Joi.number().integer().positive().required()
+      aluno_id: Joi.number().integer().positive()
         .messages({
           'number.base': 'ID do aluno deve ser um número',
           'number.integer': 'ID do aluno deve ser um número inteiro',
-          'number.positive': 'ID do aluno deve ser um número positivo',
-          'any.required': 'ID do aluno é obrigatório'
+          'number.positive': 'ID do aluno deve ser um número positivo'
         })
     })
   }),
