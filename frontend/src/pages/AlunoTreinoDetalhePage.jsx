@@ -20,6 +20,7 @@ import {
 } from '@mui/icons-material';
 
 import { API_BASE } from '../services/api';
+import ChatbotWidget from '../components/chat/ChatbotWidget';
 
 function AlunoTreinoDetalhePage() {
     const { id } = useParams();
@@ -642,6 +643,7 @@ function AlunoTreinoDetalhePage() {
                     </DialogActions>
                 </Dialog>
             </Box>
+            <ChatbotWidget />
         </Container>
     );
 }
