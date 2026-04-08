@@ -125,6 +125,31 @@ const schemas = {
     })
   }),
 
+  // Chat validation schema
+  chat: Joi.object({
+    body: Joi.object({
+      messages: Joi.array().items(
+        Joi.object({
+          role: Joi.string().valid('user', 'assistant').required()
+            .messages({
+              'string.valid': 'O papel (role) deve ser "user" ou "assistant"',
+              'any.required': 'O papel (role) da mensagem é obrigatório'
+            }),
+          content: Joi.string().max(1000).required()
+            .messages({
+              'string.max': 'A mensagem deve ter no máximo {#limit} caracteres',
+              'any.required': 'O conteúdo da mensagem é obrigatório'
+            })
+        })
+      ).min(1).max(15).required()
+        .messages({
+          'array.min': 'O histórico deve ter pelo menos uma mensagem',
+          'array.max': 'O histórico não pode exceder {#limit} mensagens',
+          'any.required': 'O histórico de mensagens é obrigatório'
+        })
+    })
+  }),
+
   // Add more schemas as needed...
 };
 
