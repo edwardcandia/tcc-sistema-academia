@@ -16,6 +16,7 @@ import {
 } from '@mui/icons-material';
 import AlunoProgressoCharts from '../components/AlunoProgressoCharts';
 import AlunoFeedbackForm from '../components/AlunoFeedbackForm';
+import ChatbotWidget from '../components/chat/ChatbotWidget';
 import { useNavigate, Link } from 'react-router-dom';
 import { API_BASE } from '../services/api';
 
@@ -800,6 +801,7 @@ function AlunoDashboardPage() {
                 {renderTabContent()}
                 {renderDialogoRegistrarTreino()}
             </Box>
+            <ChatbotWidget />
         </Container>
     );
 }
